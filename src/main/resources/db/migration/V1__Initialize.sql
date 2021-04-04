@@ -11,6 +11,7 @@ create table users(
     city varchar(50),
     phone varchar(50),
     profile_picture varchar(255),
+    profile_background varchar(255),
     primary key (id)
 );
 
@@ -39,6 +40,7 @@ create table legal_users(
     company_name varchar(50),
     company_code varchar(50),
     profile_picture varchar(255),
+    profile_background varchar(255),
     primary key (id)
 );
 

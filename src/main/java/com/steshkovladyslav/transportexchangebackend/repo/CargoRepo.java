@@ -16,14 +16,14 @@ public interface CargoRepo extends JpaRepository<Cargo, Long> {
     @EntityGraph(attributePaths = {"photoCargo", "propertiesCargo", "pointsCargo"})
     List<Cargo> findAll();
 
-    @EntityGraph(attributePaths = {"photoCargo", "propertiesCargo", "pointsCargo"})
+    @EntityGraph(attributePaths = {"user", "legalUser", "photoCargo", "propertiesCargo", "pointsCargo"})
     Cargo findById(long id);
 
-    @EntityGraph(attributePaths = {"photoCargo", "propertiesCargo", "pointsCargo"})
-    List<Cargo> findByUser_Id(long id);
+    @EntityGraph(attributePaths = {"user", "legalUser", "photoCargo", "propertiesCargo", "pointsCargo"})
+    List<Cargo> findAllByUser_Id(long id);
 
-    @EntityGraph(attributePaths = {"photoCargo", "propertiesCargo", "pointsCargo"})
-    List<Cargo> findByLegalUser_Id(long id);
+    @EntityGraph(attributePaths = {"user", "legalUser", "photoCargo", "propertiesCargo", "pointsCargo"})
+    List<Cargo> findAllByLegalUser_Id(long id);
 
     @Query(value = "SELECT cargo_id " +
             "FROM point_lu_cargo plc where (:countryFrom is null or plc.country_from = " +

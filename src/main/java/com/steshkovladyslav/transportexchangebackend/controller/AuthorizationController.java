@@ -5,8 +5,6 @@ import com.steshkovladyslav.transportexchangebackend.model.LegalUser;
 import com.steshkovladyslav.transportexchangebackend.model.Role;
 import com.steshkovladyslav.transportexchangebackend.model.User;
 import com.steshkovladyslav.transportexchangebackend.payload.request.LoginRequest;
-import com.steshkovladyslav.transportexchangebackend.payload.response.JwtLegalUserResponse;
-import com.steshkovladyslav.transportexchangebackend.payload.response.JwtUserResponse;
 import com.steshkovladyslav.transportexchangebackend.repo.RoleRepo;
 import com.steshkovladyslav.transportexchangebackend.security.jwt.JwtUtils;
 import com.steshkovladyslav.transportexchangebackend.service.AuthService;
@@ -66,29 +64,9 @@ public class AuthorizationController {
                 .collect(Collectors.toList());
 
         if (userDetails.getCompanyName() != null && !userDetails.getCompanyName().equals("")) {
-            return ResponseEntity.ok(new JwtLegalUserResponse(jwt,
-                    userDetails.getId(),
-                    userDetails.getEmail(),
-                    userDetails.getFirstName(),
-                    userDetails.getLastName(),
-                    userDetails.getPatronymic(),
-                    userDetails.getCountry(),
-                    userDetails.getCity(),
-                    userDetails.getPhone(),
-                    userDetails.getCompanyName(),
-                    userDetails.getCompanyCode(),
-                    roles));
+            return ResponseEntity.ok(jwt);
         } else {
-            return ResponseEntity.ok(new JwtUserResponse(jwt,
-                    userDetails.getId(),
-                    userDetails.getEmail(),
-                    userDetails.getFirstName(),
-                    userDetails.getLastName(),
-                    userDetails.getPatronymic(),
-                    userDetails.getCountry(),
-                    userDetails.getCity(),
-                    userDetails.getPhone(),
-                    roles));
+            return ResponseEntity.ok(jwt);
         }
     }
 

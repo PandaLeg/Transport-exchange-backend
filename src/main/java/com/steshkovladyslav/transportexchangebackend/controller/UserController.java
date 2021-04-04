@@ -22,16 +22,37 @@ public class UserController {
         this.userService = userService;
     }
 
+    @GetMapping("/get-user")
+    public <T> T getUser(
+            @RequestParam("jwtToken") String jwtToken
+    ) {
+        return userService.getUser(jwtToken);
+    }
+
     @PostMapping(value = "/edit-personal-data", consumes = {"multipart/form-data"})
     @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
     public ResponseEntity<?> editPersonalData(
             @RequestPart("personalData") PersonalData personalData,
             @RequestPart(value = "photo", required = false) MultipartFile photo,
+            @RequestParam("role") String role
+    ) throws IOException {
+        if (photo != null) {
+            System.out.println(photo.getOriginalFilename());
+        }
+        return userService.editPersonalData(personalData, photo, role);
+    }
+
+    @PostMapping(value = "/edit-background-profile", consumes = {"multipart/form-data"})
+    @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
+    public ResponseEntity<?> editBackgroundProfile(
+            @RequestPart(value = "photoBackground", required = false) MultipartFile photoBackground,
             @RequestParam("role") String role,
             @RequestParam("jwt") String jwt
     ) throws IOException {
-        System.out.println(photo.getOriginalFilename());
-        return userService.editPersonalData(personalData, photo, role, jwt);
+        if (photoBackground != null) {
+            System.out.println(photoBackground.getOriginalFilename());
+        }
+        return userService.editBackgroundProfile(photoBackground, role, jwt);
     }
 
     @PutMapping("/edit-password")

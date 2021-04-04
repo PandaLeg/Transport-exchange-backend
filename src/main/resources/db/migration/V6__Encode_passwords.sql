@@ -6,3 +6,4 @@ create extension if not exists pgcrypto;
 -- происходит подбор пароля с помощью радужных таблиц
 -- bf - алгоритм шифрования
 update users set password = crypt(password, gen_salt('bf', 8));
+update legal_users set password = crypt(password, gen_salt('bf', 8));

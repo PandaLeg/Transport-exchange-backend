@@ -66,7 +66,7 @@ public class CargoController {
     }
 
     @GetMapping("/get-cargo/{id}")
-    public Cargo getCargo(@PathVariable long id) {
+    public Map<String, Object> getCargo(@PathVariable long id) {
         return cargoService.getCargo(id);
     }
 
@@ -83,4 +83,14 @@ public class CargoController {
     ) {
         return cargoService.getPhotoCargo(id);
     }
+
+    @GetMapping("/get-all-offer-cargo/{id}")
+    public Map<String, Object> getAllOfferCargo(
+            @PathVariable("id") long id,
+            @RequestParam("role") String role
+    ) {
+        return cargoService.getAllOfferCargo(id, role);
+    }
+
+
 }

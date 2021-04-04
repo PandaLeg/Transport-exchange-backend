@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface TransportRepo extends JpaRepository<Transport, Long> {
-    @EntityGraph(attributePaths = {"photoTransport", "propertiesTransport", "pointsTransports"})
+    @EntityGraph(attributePaths = {"user", "legalUser", "photoTransport", "propertiesTransport", "pointsTransports"})
     Transport findById(long id);
 
     @EntityGraph(attributePaths = {"photoTransport", "propertiesTransport", "pointsTransports"})

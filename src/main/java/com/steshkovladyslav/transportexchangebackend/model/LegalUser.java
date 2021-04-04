@@ -37,6 +37,7 @@ public class LegalUser implements Serializable {
     private String companyCode;
 
     private String profilePicture;
+    private String profileBackground;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -66,7 +67,8 @@ public class LegalUser implements Serializable {
     }
 
     public LegalUser(String password, String email, String firstName, String lastName, String patronymic,
-                     String country, String city, String phone, String companyName, String companyCode) {
+                     String country, String city, String phone, String companyName, String companyCode,
+                     String profilePicture, String profileBackground) {
         this.password = password;
         this.email = email;
         this.firstName = firstName;
@@ -77,5 +79,7 @@ public class LegalUser implements Serializable {
         this.phone = phone;
         this.companyName = companyName;
         this.companyCode = companyCode;
+        this.profilePicture = profilePicture;
+        this.profileBackground = profileBackground;
     }
 }

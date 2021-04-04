@@ -27,14 +27,19 @@ public class CargoService {
     @Autowired
     CargoTransportGeneral cargoTransportGeneral;
 
+    private final UserRepo userRepo;
+    private final LegalUserRepo legalUserRepo;
+
     private final CargoRepo cargoRepo;
     private final PhotoCargoRepo photoCargoRepo;
     private final PropertyRepo propertyRepo;
     private final PointLUCargoRepo pointLURepo;
 
     @Autowired
-    public CargoService(CargoRepo cargoRepo, PhotoCargoRepo photoCargoRepo, PropertyRepo propertyRepo,
-                        PointLUCargoRepo pointLURepo) {
+    public CargoService(UserRepo userRepo, LegalUserRepo legalUserRepo, CargoRepo cargoRepo,
+                        PhotoCargoRepo photoCargoRepo, PropertyRepo propertyRepo, PointLUCargoRepo pointLURepo) {
+        this.userRepo = userRepo;
+        this.legalUserRepo = legalUserRepo;
         this.cargoRepo = cargoRepo;
         this.photoCargoRepo = photoCargoRepo;
         this.propertyRepo = propertyRepo;
@@ -366,8 +371,24 @@ public class CargoService {
         cargoMap.put("totalPages", pageCargo.getTotalPages());
     }
 
-    public Cargo getCargo(long id) {
-        return cargoRepo.findById(id);
+    public Map<String, Object> getCargo(long id) {
+        Map<String, Object> cargo = new HashMap<>();
+
+        Cargo cargoFromDb = cargoRepo.findById(id);
+        List<PointLUCargo> pointsLUCargoById = pointLURepo.getPointsLUCargoById(id);
+
+        if (cargoFromDb.getUser() != null) {
+            User user = userRepo.findById((long) cargoFromDb.getUser().getId());
+            cargo.put("user", user);
+        } else {
+            LegalUser legalUser = legalUserRepo.findById((long) cargoFromDb.getLegalUser().getId());
+            cargo.put("user", legalUser);
+        }
+
+        cargo.put("cargo", cargoFromDb);
+        cargo.put("pointsLUCargo", pointsLUCargoById);
+
+        return cargo;
     }
 
     public List<PointLUCargo> getPointsCargo(long id) {
@@ -382,15 +403,59 @@ public class CargoService {
         System.out.println(id);
         System.out.println(role);
         if (role.equals("ROLE_USER")) {
-            List<Cargo> cargo = cargoRepo.findByUser_Id(id);
+            List<Cargo> cargo = cargoRepo.findAllByUser_Id(id);
             return cargo.size();
         }
 
         if (role.equals("ROLE_LEGAL_USER")) {
-            List<Cargo> cargo = cargoRepo.findByLegalUser_Id(id);
+            List<Cargo> cargo = cargoRepo.findAllByLegalUser_Id(id);
             return cargo.size();
         }
 
         return 0;
+    }
+
+    public Map<String, Object> getAllOfferCargo(long id, String role) {
+        Map<String, Object> cargo = new HashMap<>();
+        List<PointLUCargo> filteredArray = new ArrayList<>();
+        Long idCargo = 0L;
+
+        if (role.equals("ROLE_USER")) {
+            List<Cargo> allByUser_id = cargoRepo.findAllByUser_Id(id);
+            List<PointLUCargo> allByIds = pointLURepo.findAllByIds(allByUser_id.stream().map(Cargo::getId)
+                    .collect(Collectors.toList()));
+
+            // Убираем дубликаты
+            for (PointLUCargo point : allByIds) {
+                if (!idCargo.equals(point.getCargo().getId())) {
+                    filteredArray.add(point);
+                    idCargo = point.getCargo().getId();
+                }
+            }
+
+            cargo.put("cargo", allByUser_id);
+            cargo.put("pointsLUCargo", filteredArray);
+            return cargo;
+        }
+
+        if (role.equals("ROLE_LEGAL_USER")) {
+            List<Cargo> allByLegalUser_id = cargoRepo.findAllByLegalUser_Id(id);
+            List<PointLUCargo> allByIds = pointLURepo.findAllByIds(allByLegalUser_id.stream().map(Cargo::getId)
+                    .collect(Collectors.toList()));
+
+            // Убираем дубликаты
+            for (PointLUCargo point : allByIds) {
+                if (!idCargo.equals(point.getCargo().getId())) {
+                    filteredArray.add(point);
+                    idCargo = point.getCargo().getId();
+                }
+            }
+
+            cargo.put("cargo", allByLegalUser_id);
+            cargo.put("pointsLUCargo", filteredArray);
+            return cargo;
+        }
+
+        return null;
     }
 }
