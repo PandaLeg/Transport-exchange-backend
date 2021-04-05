@@ -82,4 +82,8 @@ public interface CargoRepo extends JpaRepository<Cargo, Long> {
     Page<Cargo> getAllBetweenTwoDate(Iterable<Long> ids, LocalDate loadingDateFrom, LocalDate loadingDateBy,
                                      String weightFrom, String weightUpTo, String volumeFrom,
                                      String volumeUpTo, String nameCargo, String bodyType, Pageable pageable);
+
+
+    @Query(value = "select * from cargo inner join cargo_offer on cargo.id = cargo_offer.cargo_id", nativeQuery = true)
+    List<Cargo> getByCargoId();
 }

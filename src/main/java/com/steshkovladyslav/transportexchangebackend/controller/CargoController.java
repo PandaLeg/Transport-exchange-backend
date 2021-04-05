@@ -1,12 +1,14 @@
 package com.steshkovladyslav.transportexchangebackend.controller;
 
 import com.steshkovladyslav.transportexchangebackend.model.Cargo;
+import com.steshkovladyslav.transportexchangebackend.model.CargoOffer;
 import com.steshkovladyslav.transportexchangebackend.model.PhotoCargo;
 import com.steshkovladyslav.transportexchangebackend.model.PointLUCargo;
 import com.steshkovladyslav.transportexchangebackend.payload.request.PropertiesRequest;
 import com.steshkovladyslav.transportexchangebackend.payload.request.cargo.CargoRequest;
 import com.steshkovladyslav.transportexchangebackend.service.CargoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -92,5 +94,30 @@ public class CargoController {
         return cargoService.getAllOfferCargo(id, role);
     }
 
+    @GetMapping("/get-active-offers-cargo/{id}")
+    public Map<String, Object> getActiveOffersCargo(
+            @PathVariable("id") long id,
+            @RequestParam("role") String role
+    ) {
+        return cargoService.getActiveOffersCargo(id, role);
+    }
 
+    @PostMapping("/send-cargo-offer/{id}")
+    @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
+    public ResponseEntity<?> addCargoOffer(
+            @PathVariable("id") long idCargo,
+            @RequestBody CargoOffer cargoOffer,
+            @RequestParam("role") String role,
+            @RequestParam("idUser") long idUser
+    ) {
+        return cargoService.addCargoOffer(idCargo, cargoOffer, role, idUser);
+    }
+
+    @GetMapping("/get-sent-offers-cargo/{id}")
+    public List<Cargo> getSentOffersCargo(
+            @PathVariable("id") long id,
+            @RequestParam("role") String role
+    ){
+        return cargoService.getSentOffersCargo(id, role);
+    }
 }

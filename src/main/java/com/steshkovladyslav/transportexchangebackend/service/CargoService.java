@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,16 +35,19 @@ public class CargoService {
     private final PhotoCargoRepo photoCargoRepo;
     private final PropertyRepo propertyRepo;
     private final PointLUCargoRepo pointLURepo;
+    private final CargoOfferRepo cargoOfferRepo;
 
     @Autowired
     public CargoService(UserRepo userRepo, LegalUserRepo legalUserRepo, CargoRepo cargoRepo,
-                        PhotoCargoRepo photoCargoRepo, PropertyRepo propertyRepo, PointLUCargoRepo pointLURepo) {
+                        PhotoCargoRepo photoCargoRepo, PropertyRepo propertyRepo, PointLUCargoRepo pointLURepo,
+                        CargoOfferRepo cargoOfferRepo) {
         this.userRepo = userRepo;
         this.legalUserRepo = legalUserRepo;
         this.cargoRepo = cargoRepo;
         this.photoCargoRepo = photoCargoRepo;
         this.propertyRepo = propertyRepo;
         this.pointLURepo = pointLURepo;
+        this.cargoOfferRepo = cargoOfferRepo;
     }
 
     public Cargo addCargo(
@@ -454,6 +458,198 @@ public class CargoService {
             cargo.put("cargo", allByLegalUser_id);
             cargo.put("pointsLUCargo", filteredArray);
             return cargo;
+        }
+
+        return null;
+    }
+
+    public ResponseEntity<?> addCargoOffer(long idCargo, CargoOffer cargoOffer, String role, long idUser) {
+        Cargo cargo;
+
+        if (idCargo != 0) {
+            cargo = cargoRepo.findById(idCargo);
+            cargoOffer.setCargo(cargo);
+
+            if (role.equals("ROLE_USER")) {
+                User user = userRepo.findById(idUser);
+
+                cargoOffer.setUser(user);
+            } else {
+                LegalUser legalUser = legalUserRepo.findById(idUser);
+
+                cargoOffer.setLegalUser(legalUser);
+            }
+
+            cargoOfferRepo.save(cargoOffer);
+
+            return ResponseEntity.ok("OK");
+        }
+
+        return (ResponseEntity<?>) ResponseEntity.noContent();
+    }
+
+    public Map<String, Object> getActiveOffersCargo(long id, String role) {
+        Map<String, Object> cargo = new HashMap<>();
+        List<CargoOffer> cargoOffers;
+        List<Cargo> allCargoFromOffers;
+
+        List<Cargo> allCargoSendBy = new ArrayList<>();
+        List<Cargo> allCargoSendFrom = new ArrayList<>();
+
+        List<PointLUCargo> allPointsCargoBy;
+        List<PointLUCargo> allPointsCargoFrom;
+        List<PointLUCargo> filteredPointsCargoBy = new ArrayList<>();
+        List<PointLUCargo> filteredPointsCargoFrom = new ArrayList<>();
+
+        Long idCargo = 0L;
+
+        if (role.equals("ROLE_USER")) {
+            cargoOffers = cargoOfferRepo.findAll();
+            allCargoFromOffers = cargoRepo.getByCargoId();
+
+            // Находим все грузы из заявок, которые отправил юзер
+            for (CargoOffer cargoOffer : cargoOffers) {
+                // Заявка, которая была отправлена юзером
+                if (cargoOffer.getUser() != null) {
+                    if (cargoOffer.getUser().getId() == id) {
+                        allCargoSendFrom.add(cargoOffer.getCargo());
+                    }
+                }
+            }
+
+            for (Cargo c : allCargoFromOffers) {
+                // Заявка которую отправили юзеру
+                if (c.getUser() != null) {
+                    if (c.getUser().getId() == id) {
+                        allCargoSendBy.add(c);
+                    }
+                }
+            }
+
+            allPointsCargoBy = pointLURepo.findAllByIds(allCargoSendBy.stream().map(Cargo::getId)
+                    .collect(Collectors.toList()));
+
+            allPointsCargoFrom = pointLURepo.findAllByIds(allCargoSendFrom.stream().map(Cargo::getId)
+                    .collect(Collectors.toList()));
+
+            // Убираем дубликаты
+            for (PointLUCargo point : allPointsCargoBy) {
+                if (!idCargo.equals(point.getCargo().getId())) {
+                    filteredPointsCargoBy.add(point);
+                    idCargo = point.getCargo().getId();
+                }
+            }
+
+            if (idCargo != 0L) {
+                idCargo = 0L;
+            }
+
+            for (PointLUCargo point : allPointsCargoFrom) {
+                if (!idCargo.equals(point.getCargo().getId())) {
+                    filteredPointsCargoFrom.add(point);
+                    idCargo = point.getCargo().getId();
+                }
+            }
+
+            cargo.put("allCargoSendFrom", allCargoSendFrom);
+            cargo.put("pointsLUCargoFrom", filteredPointsCargoFrom);
+            cargo.put("allCargoSendBy", allCargoSendBy);
+            cargo.put("pointsLUCargoBy", filteredPointsCargoBy);
+            return cargo;
+        }
+
+        if (role.equals("ROLE_LEGAL_USER")) {
+            cargoOffers = cargoOfferRepo.findAll();
+            allCargoFromOffers = cargoRepo.getByCargoId();
+
+            // Находим все грузы из заявок, которые отправил легал юзер
+            for (CargoOffer cargoOffer : cargoOffers) {
+                // Заявка, которая была отправлена легал юзером
+                if (cargoOffer.getLegalUser() != null) {
+                    if (cargoOffer.getLegalUser().getId() == id) {
+                        allCargoSendFrom.add(cargoOffer.getCargo());
+                    }
+                }
+            }
+
+            for (Cargo c : allCargoFromOffers) {
+                // Заявка которую отправили легал юзеру
+                if (c.getLegalUser() != null) {
+                    if (c.getLegalUser().getId() == id) {
+                        allCargoSendBy.add(c);
+                    }
+                }
+            }
+
+            allPointsCargoBy = pointLURepo.findAllByIds(allCargoSendBy.stream().map(Cargo::getId)
+                    .collect(Collectors.toList()));
+
+            allPointsCargoFrom = pointLURepo.findAllByIds(allCargoSendFrom.stream().map(Cargo::getId)
+                    .collect(Collectors.toList()));
+
+            // Убираем дубликаты
+            for (PointLUCargo point : allPointsCargoBy) {
+                if (!idCargo.equals(point.getCargo().getId())) {
+                    filteredPointsCargoBy.add(point);
+                    idCargo = point.getCargo().getId();
+                }
+            }
+
+            if (idCargo != 0L) {
+                idCargo = 0L;
+            }
+
+            for (PointLUCargo point : allPointsCargoFrom) {
+                if (!idCargo.equals(point.getCargo().getId())) {
+                    filteredPointsCargoFrom.add(point);
+                    idCargo = point.getCargo().getId();
+                }
+            }
+
+            cargo.put("allCargoSendFrom", allCargoSendFrom);
+            cargo.put("pointsLUCargoFrom", filteredPointsCargoFrom);
+            cargo.put("allCargoSendBy", allCargoSendBy);
+            cargo.put("pointsLUCargoBy", filteredPointsCargoBy);
+            return cargo;
+        }
+
+        return null;
+    }
+
+    public List<Cargo> getSentOffersCargo(long id, String role) {
+        List<CargoOffer> cargoOffers;
+        List<Cargo> allCargoSendFrom = new ArrayList<>();
+
+        if (role.equals("ROLE_USER")) {
+            cargoOffers = cargoOfferRepo.findAll();
+
+            // Находим все грузы из заявок, которые отправил юзер
+            for (CargoOffer cargoOffer : cargoOffers) {
+                // Заявка, которая была отправлена юзером
+                if (cargoOffer.getUser() != null) {
+                    if (cargoOffer.getUser().getId() == id) {
+                        allCargoSendFrom.add(cargoOffer.getCargo());
+                    }
+                }
+            }
+
+            return allCargoSendFrom;
+        }
+
+        if (role.equals("ROLE_LEGAL_USER")) {
+            cargoOffers = cargoOfferRepo.findAll();
+
+            // Находим все грузы из заявок, которые отправил легал юзер
+            for (CargoOffer cargoOffer : cargoOffers) {
+                // Заявка, которая была отправлена легал юзером
+                if (cargoOffer.getLegalUser() != null) {
+                    if (cargoOffer.getLegalUser().getId() == id) {
+                        allCargoSendFrom.add(cargoOffer.getCargo());
+                    }
+                }
+            }
+
+            return allCargoSendFrom;
         }
 
         return null;

@@ -99,6 +99,15 @@ public class Cargo implements Serializable {
     )
     private Set<Property> propertiesCargo = new HashSet<>();
 
+    @OneToOne(mappedBy = "cargo", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIdentityReference
+    @JsonIdentityInfo(
+            property = "id",
+            generator = ObjectIdGenerators.PropertyGenerator.class
+    )
+    private CargoOffer cargoOffer;
+
+
     public Cargo() {
     }
 

@@ -63,6 +63,14 @@ public class LegalUser implements Serializable {
     )
     private Set<Transport> transports = new HashSet<>();
 
+    @OneToMany(mappedBy = "legalUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIdentityReference
+    @JsonIdentityInfo(
+            property = "id",
+            generator = ObjectIdGenerators.PropertyGenerator.class
+    )
+    private Set<CargoOffer> cargoOffers = new HashSet<>();
+
     public LegalUser() {
     }
 
