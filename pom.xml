@@ -87,6 +87,12 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- SPRING SOCKET-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
 		<!-- Apache Commons FileUpload -->
 		<dependency>
 			<groupId>commons-fileupload</groupId>

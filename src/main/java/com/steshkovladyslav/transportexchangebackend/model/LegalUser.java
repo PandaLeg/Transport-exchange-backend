@@ -71,6 +71,22 @@ public class LegalUser implements Serializable {
     )
     private Set<CargoOffer> cargoOffers = new HashSet<>();
 
+    @OneToMany(mappedBy = "legalUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIdentityReference
+    @JsonIdentityInfo(
+            property = "id",
+            generator = ObjectIdGenerators.PropertyGenerator.class
+    )
+    private Set<ChatMessage> messages = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "legal_user_chats",
+            joinColumns = @JoinColumn(name = "legal_user_id"),
+            inverseJoinColumns = @JoinColumn(name = "chat_id")
+    )
+    private Set<Chat> chats = new HashSet<>();
+
     public LegalUser() {
     }
 

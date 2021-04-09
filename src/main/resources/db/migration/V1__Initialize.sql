@@ -50,3 +50,5 @@ create table legal_user_roles(
     primary key (legal_user_id, role_id)
 );
 
+
+
