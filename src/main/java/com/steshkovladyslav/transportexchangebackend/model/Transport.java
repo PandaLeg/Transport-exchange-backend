@@ -54,6 +54,8 @@ public class Transport implements Serializable {
 
     private String additional;
 
+    private String status;
+
     @ManyToOne
     @JsonIdentityReference
     @JsonIdentityInfo(
@@ -95,6 +97,14 @@ public class Transport implements Serializable {
             inverseJoinColumns = @JoinColumn(name = "property_id")
     )
     private Set<Property> propertiesTransport = new HashSet<>();
+
+    @OneToOne(mappedBy = "transport", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIdentityReference
+    @JsonIdentityInfo(
+            property = "id",
+            generator = ObjectIdGenerators.PropertyGenerator.class
+    )
+    private TransportOffer transportOffer;
 
     public Transport() {
     }

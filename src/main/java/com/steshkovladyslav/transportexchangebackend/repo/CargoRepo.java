@@ -1,7 +1,6 @@
 package com.steshkovladyslav.transportexchangebackend.repo;
 
 import com.steshkovladyslav.transportexchangebackend.model.Cargo;
-import com.steshkovladyslav.transportexchangebackend.model.PointLUCargo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;

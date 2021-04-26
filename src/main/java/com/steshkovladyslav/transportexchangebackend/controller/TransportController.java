@@ -1,12 +1,11 @@
 package com.steshkovladyslav.transportexchangebackend.controller;
 
-import com.steshkovladyslav.transportexchangebackend.model.PhotoTransport;
-import com.steshkovladyslav.transportexchangebackend.model.PointLUTransport;
-import com.steshkovladyslav.transportexchangebackend.model.Transport;
+import com.steshkovladyslav.transportexchangebackend.model.*;
 import com.steshkovladyslav.transportexchangebackend.payload.request.PropertiesRequest;
 import com.steshkovladyslav.transportexchangebackend.payload.request.transport.TransportRequest;
 import com.steshkovladyslav.transportexchangebackend.service.TransportService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -67,7 +66,7 @@ public class TransportController {
     }
 
     @GetMapping("/get-transport/{id}")
-    public Transport getTransport(
+    public Map<String, Object> getTransport(
             @PathVariable("id") long id
     ) {
         return transportService.getTransport(id);
@@ -85,5 +84,49 @@ public class TransportController {
             @PathVariable("id") long id
     ) {
         return transportService.getPhotoTransport(id);
+    }
+
+    @PostMapping("/send-transport-offer/{id}")
+    @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
+    public ResponseEntity<?> addTransportOffer(
+            @PathVariable("id") long idTransport,
+            @RequestBody TransportOffer transportOffer,
+            @RequestParam("role") String role,
+            @RequestParam("idUser") long idUser
+    ) {
+        return transportService.addTransportOffer(idTransport, transportOffer, role, idUser);
+    }
+
+    @GetMapping("/get-all-offer-transports/{id}")
+    public Map<String, Object> getAllOfferTransports(
+            @PathVariable("id") long id,
+            @RequestParam("role") String role
+    ) {
+        return transportService.getAllOfferTransports(id, role);
+    }
+
+    @GetMapping("/get-active-sent-offers-transports/{id}")
+    public Map<String, Object> getActiveAndSentOffersTransports(
+            @PathVariable("id") long id,
+            @RequestParam("role") String role
+    ) {
+        return transportService.getActiveAndSentOffersTransports(id, role);
+    }
+
+    @GetMapping("/get-sent-offers-transports/{id}")
+    public List<Transport> getSentOffersTransports(
+            @PathVariable("id") long id,
+            @RequestParam("role") String role
+    ){
+        System.out.println("GET SENT OFFERS");
+        return transportService.getSentOffersTransports(id, role);
+    }
+
+    @PutMapping("/change-status-transport-offer")
+    @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
+    public Transport changeStatusAndAddToProcessing(
+            @RequestParam("id") Long id
+    ){
+        return transportService.changeStatusTransport(id);
     }
 }

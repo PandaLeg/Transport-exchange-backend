@@ -17,6 +17,7 @@ create table cargo (
     currency varchar(10),
     prepayment varchar(20),
     additional varchar(255),
+    status varchar(100),
     user_id int8,
     legal_user_id int8,
     primary key (id)

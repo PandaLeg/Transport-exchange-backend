@@ -15,11 +15,11 @@ public interface TransportRepo extends JpaRepository<Transport, Long> {
     @EntityGraph(attributePaths = {"user", "legalUser", "photoTransport", "propertiesTransport", "pointsTransports"})
     Transport findById(long id);
 
-    @EntityGraph(attributePaths = {"photoTransport", "propertiesTransport", "pointsTransports"})
-    List<Transport> findByUser_Id(long id);
+    @EntityGraph(attributePaths = {"user", "legalUser", "photoTransport", "propertiesTransport", "pointsTransports"})
+    List<Transport> findAllByUser_Id(long id);
 
-    @EntityGraph(attributePaths = {"photoTransport", "propertiesTransport", "pointsTransports"})
-    List<Transport> findByLegalUser_Id(long id);
+    @EntityGraph(attributePaths = {"user", "legalUser", "photoTransport", "propertiesTransport", "pointsTransports"})
+    List<Transport> findAllByLegalUser_Id(long id);
 
     @Query(value = "SELECT transport_id " +
             "FROM point_lu_transport plt where (:countryFrom is null or plt.country_from = " +
@@ -70,4 +70,8 @@ public interface TransportRepo extends JpaRepository<Transport, Long> {
     Page<Transport> getAllBetweenTwoDate(Iterable<Long> ids, LocalDate loadingDateFrom, LocalDate loadingDateBy,
                                          String carryingCapacityFrom, String carryingCapacityUpTo, String volumeFrom,
                                          String volumeUpTo, String bodyType, Pageable pageable);
+
+    @Query(value = "select * from transport inner join transport_offer on transport.id = transport_offer.transport_id",
+            nativeQuery = true)
+    List<Transport> getByTransportId();
 }

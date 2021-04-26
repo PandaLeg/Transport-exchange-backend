@@ -419,50 +419,6 @@ public class CargoService {
         return 0;
     }
 
-    public Map<String, Object> getAllOfferCargo(long id, String role) {
-        Map<String, Object> cargo = new HashMap<>();
-        List<PointLUCargo> filteredArray = new ArrayList<>();
-        Long idCargo = 0L;
-
-        if (role.equals("ROLE_USER")) {
-            List<Cargo> allByUser_id = cargoRepo.findAllByUser_Id(id);
-            List<PointLUCargo> allByIds = pointLURepo.findAllByIds(allByUser_id.stream().map(Cargo::getId)
-                    .collect(Collectors.toList()));
-
-            // Убираем дубликаты
-            for (PointLUCargo point : allByIds) {
-                if (!idCargo.equals(point.getCargo().getId())) {
-                    filteredArray.add(point);
-                    idCargo = point.getCargo().getId();
-                }
-            }
-
-            cargo.put("cargo", allByUser_id);
-            cargo.put("pointsLUCargo", filteredArray);
-            return cargo;
-        }
-
-        if (role.equals("ROLE_LEGAL_USER")) {
-            List<Cargo> allByLegalUser_id = cargoRepo.findAllByLegalUser_Id(id);
-            List<PointLUCargo> allByIds = pointLURepo.findAllByIds(allByLegalUser_id.stream().map(Cargo::getId)
-                    .collect(Collectors.toList()));
-
-            // Убираем дубликаты
-            for (PointLUCargo point : allByIds) {
-                if (!idCargo.equals(point.getCargo().getId())) {
-                    filteredArray.add(point);
-                    idCargo = point.getCargo().getId();
-                }
-            }
-
-            cargo.put("cargo", allByLegalUser_id);
-            cargo.put("pointsLUCargo", filteredArray);
-            return cargo;
-        }
-
-        return null;
-    }
-
     public ResponseEntity<?> addCargoOffer(long idCargo, CargoOffer cargoOffer, String role, long idUser) {
         Cargo cargo;
 
@@ -488,18 +444,65 @@ public class CargoService {
         return (ResponseEntity<?>) ResponseEntity.noContent();
     }
 
-    public Map<String, Object> getActiveOffersCargo(long id, String role) {
+    public Map<String, Object> getAllOfferCargo(long id, String role) {
+        Map<String, Object> cargo = new HashMap<>();
+        List<PointLUCargo> filteredArray = new ArrayList<>();
+        List<PointLUCargo> allByIds;
+        Long idCargo = 0L;
+
+        if (role.equals("ROLE_USER")) {
+            List<Cargo> allByUser_id = cargoRepo.findAllByUser_Id(id);
+            allByIds = pointLURepo.findAllByIds(allByUser_id.stream().map(Cargo::getId)
+                    .collect(Collectors.toList()));
+
+            // Убираем дубликаты
+            for (PointLUCargo point : allByIds) {
+                if (!idCargo.equals(point.getCargo().getId())) {
+                    filteredArray.add(point);
+                    idCargo = point.getCargo().getId();
+                }
+            }
+
+            cargo.put("cargo", allByUser_id);
+            cargo.put("pointsLUCargo", filteredArray);
+            return cargo;
+        }
+
+        if (role.equals("ROLE_LEGAL_USER")) {
+            List<Cargo> allByLegalUser_id = cargoRepo.findAllByLegalUser_Id(id);
+            allByIds = pointLURepo.findAllByIds(allByLegalUser_id.stream().map(Cargo::getId)
+                    .collect(Collectors.toList()));
+
+            // Убираем дубликаты
+            for (PointLUCargo point : allByIds) {
+                if (!idCargo.equals(point.getCargo().getId())) {
+                    filteredArray.add(point);
+                    idCargo = point.getCargo().getId();
+                }
+            }
+
+            cargo.put("cargo", allByLegalUser_id);
+            cargo.put("pointsLUCargo", filteredArray);
+            return cargo;
+        }
+
+        return null;
+    }
+
+    public Map<String, Object> getActiveAndSentOffersCargo(long id, String role) {
         Map<String, Object> cargo = new HashMap<>();
         List<CargoOffer> cargoOffers;
         List<Cargo> allCargoFromOffers;
 
-        List<Cargo> allCargoSendBy = new ArrayList<>();
-        List<Cargo> allCargoSendFrom = new ArrayList<>();
+        List<Cargo> allCargoSend = new ArrayList<>();
+        List<Cargo> allCargoActive = new ArrayList<>();
+        List<Cargo> allCargoInProcessing = new ArrayList<>();
+        List<Cargo> allCargoComplete = new ArrayList<>();
 
-        List<PointLUCargo> allPointsCargoBy;
-        List<PointLUCargo> allPointsCargoFrom;
-        List<PointLUCargo> filteredPointsCargoBy = new ArrayList<>();
-        List<PointLUCargo> filteredPointsCargoFrom = new ArrayList<>();
+        List<PointLUCargo> filteredPointsDispatchedCargo = new ArrayList<>();
+        List<PointLUCargo> filteredPointsActiveCargo = new ArrayList<>();
+        List<PointLUCargo> filteredPointsInProcessingCargo = new ArrayList<>();
+        List<PointLUCargo> filteredPointsCompleteCargo = new ArrayList<>();
 
         Long idCargo = 0L;
 
@@ -507,12 +510,19 @@ public class CargoService {
             cargoOffers = cargoOfferRepo.findAll();
             allCargoFromOffers = cargoRepo.getByCargoId();
 
-            // Находим все грузы из заявок, которые отправил юзер
             for (CargoOffer cargoOffer : cargoOffers) {
                 // Заявка, которая была отправлена юзером
                 if (cargoOffer.getUser() != null) {
                     if (cargoOffer.getUser().getId() == id) {
-                        allCargoSendFrom.add(cargoOffer.getCargo());
+                        if (cargoOffer.getCargo().getStatus() != null &&
+                                !cargoOffer.getCargo().getStatus().equals("Complete")) {
+                            allCargoInProcessing.add(cargoOffer.getCargo());
+                        } else if (cargoOffer.getCargo().getStatus() != null &&
+                                cargoOffer.getCargo().getStatus().equals("Complete")) {
+                            allCargoComplete.add(cargoOffer.getCargo());
+                        } else {
+                            allCargoSend.add(cargoOffer.getCargo());
+                        }
                     }
                 }
             }
@@ -521,53 +531,39 @@ public class CargoService {
                 // Заявка которую отправили юзеру
                 if (c.getUser() != null) {
                     if (c.getUser().getId() == id) {
-                        allCargoSendBy.add(c);
+                        if (c.getStatus() != null && !c.getStatus().equals("Complete")) {
+                            allCargoInProcessing.add(c);
+                        } else if (c.getStatus() != null && c.getStatus().equals("Complete")) {
+                            allCargoComplete.add(c);
+                        } else {
+                            allCargoActive.add(c);
+                        }
                     }
                 }
             }
 
-            allPointsCargoBy = pointLURepo.findAllByIds(allCargoSendBy.stream().map(Cargo::getId)
-                    .collect(Collectors.toList()));
+            setPointsCargoAndFilledCargoMap(cargo, allCargoSend, allCargoActive, allCargoInProcessing, allCargoComplete,
+                    filteredPointsDispatchedCargo, filteredPointsActiveCargo, filteredPointsInProcessingCargo,
+                    filteredPointsCompleteCargo, idCargo);
 
-            allPointsCargoFrom = pointLURepo.findAllByIds(allCargoSendFrom.stream().map(Cargo::getId)
-                    .collect(Collectors.toList()));
-
-            // Убираем дубликаты
-            for (PointLUCargo point : allPointsCargoBy) {
-                if (!idCargo.equals(point.getCargo().getId())) {
-                    filteredPointsCargoBy.add(point);
-                    idCargo = point.getCargo().getId();
-                }
-            }
-
-            if (idCargo != 0L) {
-                idCargo = 0L;
-            }
-
-            for (PointLUCargo point : allPointsCargoFrom) {
-                if (!idCargo.equals(point.getCargo().getId())) {
-                    filteredPointsCargoFrom.add(point);
-                    idCargo = point.getCargo().getId();
-                }
-            }
-
-            cargo.put("allCargoSendFrom", allCargoSendFrom);
-            cargo.put("pointsLUCargoFrom", filteredPointsCargoFrom);
-            cargo.put("allCargoSendBy", allCargoSendBy);
-            cargo.put("pointsLUCargoBy", filteredPointsCargoBy);
             return cargo;
-        }
-
-        if (role.equals("ROLE_LEGAL_USER")) {
+        } else {
             cargoOffers = cargoOfferRepo.findAll();
             allCargoFromOffers = cargoRepo.getByCargoId();
 
-            // Находим все грузы из заявок, которые отправил легал юзер
             for (CargoOffer cargoOffer : cargoOffers) {
                 // Заявка, которая была отправлена легал юзером
                 if (cargoOffer.getLegalUser() != null) {
                     if (cargoOffer.getLegalUser().getId() == id) {
-                        allCargoSendFrom.add(cargoOffer.getCargo());
+                        if (cargoOffer.getCargo().getStatus() != null &&
+                                !cargoOffer.getCargo().getStatus().equals("Complete")) {
+                            allCargoInProcessing.add(cargoOffer.getCargo());
+                        } else if (cargoOffer.getCargo().getStatus() != null &&
+                                cargoOffer.getCargo().getStatus().equals("Complete")) {
+                            allCargoComplete.add(cargoOffer.getCargo());
+                        } else {
+                            allCargoSend.add(cargoOffer.getCargo());
+                        }
                     }
                 }
             }
@@ -576,44 +572,98 @@ public class CargoService {
                 // Заявка которую отправили легал юзеру
                 if (c.getLegalUser() != null) {
                     if (c.getLegalUser().getId() == id) {
-                        allCargoSendBy.add(c);
+                        if (c.getStatus() != null && !c.getStatus().equals("Complete")) {
+                            allCargoInProcessing.add(c);
+                        } else if (c.getStatus() != null && c.getStatus().equals("Complete")) {
+                            allCargoComplete.add(c);
+                        } else {
+                            allCargoActive.add(c);
+                        }
                     }
                 }
             }
 
-            allPointsCargoBy = pointLURepo.findAllByIds(allCargoSendBy.stream().map(Cargo::getId)
-                    .collect(Collectors.toList()));
+            setPointsCargoAndFilledCargoMap(cargo, allCargoSend, allCargoActive, allCargoInProcessing, allCargoComplete,
+                    filteredPointsDispatchedCargo, filteredPointsActiveCargo, filteredPointsInProcessingCargo,
+                    filteredPointsCompleteCargo, idCargo);
 
-            allPointsCargoFrom = pointLURepo.findAllByIds(allCargoSendFrom.stream().map(Cargo::getId)
-                    .collect(Collectors.toList()));
-
-            // Убираем дубликаты
-            for (PointLUCargo point : allPointsCargoBy) {
-                if (!idCargo.equals(point.getCargo().getId())) {
-                    filteredPointsCargoBy.add(point);
-                    idCargo = point.getCargo().getId();
-                }
-            }
-
-            if (idCargo != 0L) {
-                idCargo = 0L;
-            }
-
-            for (PointLUCargo point : allPointsCargoFrom) {
-                if (!idCargo.equals(point.getCargo().getId())) {
-                    filteredPointsCargoFrom.add(point);
-                    idCargo = point.getCargo().getId();
-                }
-            }
-
-            cargo.put("allCargoSendFrom", allCargoSendFrom);
-            cargo.put("pointsLUCargoFrom", filteredPointsCargoFrom);
-            cargo.put("allCargoSendBy", allCargoSendBy);
-            cargo.put("pointsLUCargoBy", filteredPointsCargoBy);
             return cargo;
         }
+    }
 
-        return null;
+    private void setPointsCargoAndFilledCargoMap(Map<String, Object> cargo, List<Cargo> allCargoSend,
+                                                 List<Cargo> allCargoActive, List<Cargo> allCargoInProcessing,
+                                                 List<Cargo> allCargoComplete,
+                                                 List<PointLUCargo> filteredPointsDispatchedCargo,
+                                                 List<PointLUCargo> filteredPointsActiveCargo,
+                                                 List<PointLUCargo> filteredPointsInProcessingCargo,
+                                                 List<PointLUCargo> filteredPointsCompleteCargo, Long idCargo) {
+        List<PointLUCargo> allPointsDispatchedCargo;
+        List<PointLUCargo> allPointsActiveCargo;
+        List<PointLUCargo> allPointsCargoInProcessing;
+        List<PointLUCargo> allPointsCargoComplete;
+
+        allPointsDispatchedCargo = pointLURepo.findAllByIds(allCargoSend.stream().map(Cargo::getId)
+                .collect(Collectors.toList()));
+
+        allPointsActiveCargo = pointLURepo.findAllByIds(allCargoActive.stream().map(Cargo::getId)
+                .collect(Collectors.toList()));
+
+        allPointsCargoInProcessing = pointLURepo.findAllByIds(allCargoInProcessing.stream().map(Cargo::getId)
+                .collect(Collectors.toList()));
+
+        allPointsCargoComplete = pointLURepo.findAllByIds(allCargoComplete.stream().map(Cargo::getId)
+                .collect(Collectors.toList()));
+
+        // Убираем дубликаты
+        for (PointLUCargo point : allPointsDispatchedCargo) {
+            if (!idCargo.equals(point.getCargo().getId())) {
+                filteredPointsDispatchedCargo.add(point);
+                idCargo = point.getCargo().getId();
+            }
+        }
+
+        if (idCargo != 0L) {
+            idCargo = 0L;
+        }
+
+        for (PointLUCargo point : allPointsActiveCargo) {
+            if (!idCargo.equals(point.getCargo().getId())) {
+                filteredPointsActiveCargo.add(point);
+                idCargo = point.getCargo().getId();
+            }
+        }
+
+        if (idCargo != 0L) {
+            idCargo = 0L;
+        }
+
+        for (PointLUCargo point : allPointsCargoInProcessing) {
+            if (!idCargo.equals(point.getCargo().getId())) {
+                filteredPointsInProcessingCargo.add(point);
+                idCargo = point.getCargo().getId();
+            }
+        }
+
+        if (idCargo != 0L) {
+            idCargo = 0L;
+        }
+
+        for (PointLUCargo point : allPointsCargoComplete) {
+            if (!idCargo.equals(point.getCargo().getId())) {
+                filteredPointsCompleteCargo.add(point);
+                idCargo = point.getCargo().getId();
+            }
+        }
+
+        cargo.put("allCargoSend", allCargoSend);
+        cargo.put("pointsLUDispatchedCargo", filteredPointsDispatchedCargo);
+        cargo.put("allCargoActive", allCargoActive);
+        cargo.put("pointsLUActiveCargo", filteredPointsActiveCargo);
+        cargo.put("allCargoInProcessing", allCargoInProcessing);
+        cargo.put("pointsLUInProcessingCargo", filteredPointsInProcessingCargo);
+        cargo.put("allCargoComplete", allCargoComplete);
+        cargo.put("pointsLUCompleteCargo", filteredPointsCompleteCargo);
     }
 
     public List<Cargo> getSentOffersCargo(long id, String role) {
@@ -653,5 +703,23 @@ public class CargoService {
         }
 
         return null;
+    }
+
+    public Cargo changeStatusCargo(Long id) {
+        Cargo cargo = cargoRepo.findById(id).get();
+
+        if (cargo.getStatus() == null || cargo.getStatus().equals("")) {
+            cargo.setStatus("In processing");
+        } else if (cargo.getStatus().equals("In processing")) {
+            cargo.setStatus("Loading");
+        } else if (cargo.getStatus().equals("Loading")) {
+            cargo.setStatus("In way");
+        } else if (cargo.getStatus().equals("In way")) {
+            cargo.setStatus("Complete");
+        }
+
+        cargoRepo.save(cargo);
+
+        return cargo;
     }
 }

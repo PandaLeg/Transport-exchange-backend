@@ -86,22 +86,6 @@ public class CargoController {
         return cargoService.getPhotoCargo(id);
     }
 
-    @GetMapping("/get-all-offer-cargo/{id}")
-    public Map<String, Object> getAllOfferCargo(
-            @PathVariable("id") long id,
-            @RequestParam("role") String role
-    ) {
-        return cargoService.getAllOfferCargo(id, role);
-    }
-
-    @GetMapping("/get-active-offers-cargo/{id}")
-    public Map<String, Object> getActiveOffersCargo(
-            @PathVariable("id") long id,
-            @RequestParam("role") String role
-    ) {
-        return cargoService.getActiveOffersCargo(id, role);
-    }
-
     @PostMapping("/send-cargo-offer/{id}")
     @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
     public ResponseEntity<?> addCargoOffer(
@@ -113,11 +97,35 @@ public class CargoController {
         return cargoService.addCargoOffer(idCargo, cargoOffer, role, idUser);
     }
 
+    @GetMapping("/get-all-offer-cargo/{id}")
+    public Map<String, Object> getAllOfferCargo(
+            @PathVariable("id") long id,
+            @RequestParam("role") String role
+    ) {
+        return cargoService.getAllOfferCargo(id, role);
+    }
+
+    @GetMapping("/get-active-sent-offers-cargo/{id}")
+    public Map<String, Object> getActiveAndSentOffersCargo(
+            @PathVariable("id") long id,
+            @RequestParam("role") String role
+    ) {
+        return cargoService.getActiveAndSentOffersCargo(id, role);
+    }
+
     @GetMapping("/get-sent-offers-cargo/{id}")
     public List<Cargo> getSentOffersCargo(
             @PathVariable("id") long id,
             @RequestParam("role") String role
     ){
         return cargoService.getSentOffersCargo(id, role);
+    }
+
+    @PutMapping("/change-status-cargo-offer")
+    @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
+    public Cargo changeStatusAndAddToProcessing(
+            @RequestParam("id") Long id
+    ){
+        return cargoService.changeStatusCargo(id);
     }
 }

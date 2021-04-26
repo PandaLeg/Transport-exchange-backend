@@ -57,6 +57,8 @@ public class Cargo implements Serializable {
 
     private String additional;
 
+    private String status;
+
     @ManyToOne
     @JsonIdentityReference
     @JsonIdentityInfo(
@@ -106,7 +108,6 @@ public class Cargo implements Serializable {
             generator = ObjectIdGenerators.PropertyGenerator.class
     )
     private CargoOffer cargoOffer;
-
 
     public Cargo() {
     }

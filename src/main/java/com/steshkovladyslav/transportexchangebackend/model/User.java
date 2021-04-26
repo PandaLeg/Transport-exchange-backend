@@ -74,6 +74,14 @@ public class User implements Serializable {
             property = "id",
             generator = ObjectIdGenerators.PropertyGenerator.class
     )
+    private Set<TransportOffer> transportOffers = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIdentityReference
+    @JsonIdentityInfo(
+            property = "id",
+            generator = ObjectIdGenerators.PropertyGenerator.class
+    )
     private Set<ChatMessage> messages = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)

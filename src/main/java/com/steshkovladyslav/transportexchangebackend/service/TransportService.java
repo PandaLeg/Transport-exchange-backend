@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,18 +28,26 @@ public class TransportService {
     @Autowired
     CargoTransportGeneral cargoTransportGeneral;
 
+    private final UserRepo userRepo;
+    private final LegalUserRepo legalUserRepo;
+
     private final TransportRepo transportRepo;
     private final PhotoTransportRepo photoTransportRepo;
     private final PropertyRepo propertyRepo;
     private final PointLUTransRepo pointLUTransRepo;
+    private final TransportOfferRepo transportOfferRepo;
 
     @Autowired
-    public TransportService(TransportRepo transportRepo, PhotoTransportRepo photoTransportRepo, PropertyRepo propertyRepo,
-                            PointLUTransRepo pointLUTransRepo) {
+    public TransportService(UserRepo userRepo, LegalUserRepo legalUserRepo, TransportRepo transportRepo,
+                            PhotoTransportRepo photoTransportRepo, PropertyRepo propertyRepo,
+                            PointLUTransRepo pointLUTransRepo, TransportOfferRepo transportOfferRepo) {
+        this.userRepo = userRepo;
+        this.legalUserRepo = legalUserRepo;
         this.transportRepo = transportRepo;
         this.photoTransportRepo = photoTransportRepo;
         this.propertyRepo = propertyRepo;
         this.pointLUTransRepo = pointLUTransRepo;
+        this.transportOfferRepo = transportOfferRepo;
     }
 
     public List<Transport> getTransports() {
@@ -107,6 +116,7 @@ public class TransportService {
                     }
                 }
             }
+            return transport;
         }
         return null;
     }
@@ -368,8 +378,24 @@ public class TransportService {
         transportMap.put("totalPages", transportPage.getTotalPages());
     }
 
-    public Transport getTransport(long id) {
-        return transportRepo.findById(id);
+    public Map<String, Object> getTransport(long id) {
+        Map<String, Object> transports = new HashMap<>();
+
+        Transport transport = transportRepo.findById(id);
+        List<PointLUTransport> pointsLUCargoById = pointLUTransRepo.getPointsLUTransportById(id);
+
+        if (transport.getUser() != null) {
+            User user = userRepo.findById((long) transport.getUser().getId());
+            transports.put("user", user);
+        } else {
+            LegalUser legalUser = legalUserRepo.findById((long) transport.getLegalUser().getId());
+            transports.put("user", legalUser);
+        }
+
+        transports.put("transport", transport);
+        transports.put("pointsLUTransport", pointsLUCargoById);
+
+        return transports;
     }
 
     public List<PointLUTransport> getPointsTransport(long id) {
@@ -382,21 +408,328 @@ public class TransportService {
 
     public Integer getCountTransport(long id, String role) {
         if (role.equals("ROLE_USER")) {
-            List<Transport> transports = transportRepo.findByUser_Id(id);
-            for(Transport transport : transports){
+            List<Transport> transports = transportRepo.findAllByUser_Id(id);
+            for (Transport transport : transports) {
                 System.out.println(transport.getId());
             }
             return transports.size();
         }
 
         if (role.equals("ROLE_LEGAL_USER")) {
-            List<Transport> transports = transportRepo.findByLegalUser_Id(id);
-            for(Transport transport : transports){
+            List<Transport> transports = transportRepo.findAllByLegalUser_Id(id);
+            for (Transport transport : transports) {
                 System.out.println(transport.getId());
             }
             return transports.size();
         }
 
         return 0;
+    }
+
+    public ResponseEntity<?> addTransportOffer(long idTransport, TransportOffer transportOffer, String role,
+                                               long idUser) {
+        Transport transport;
+
+        if (idTransport != 0) {
+            transport = transportRepo.findById(idTransport);
+            transportOffer.setTransport(transport);
+
+            if (role.equals("ROLE_USER")) {
+                User user = userRepo.findById(idUser);
+
+                transportOffer.setUser(user);
+            } else {
+                LegalUser legalUser = legalUserRepo.findById(idUser);
+
+                transportOffer.setLegalUser(legalUser);
+            }
+
+            transportOfferRepo.save(transportOffer);
+
+            return ResponseEntity.ok("OK");
+        }
+
+        return (ResponseEntity<?>) ResponseEntity.noContent();
+    }
+
+    public Map<String, Object> getAllOfferTransports(long id, String role) {
+        Map<String, Object> transports = new HashMap<>();
+        List<PointLUTransport> filteredArray = new ArrayList<>();
+        List<PointLUTransport> allByIds;
+
+        Long idTransport = 0L;
+
+        if (role.equals("ROLE_USER")) {
+            List<Transport> allByUser_id = transportRepo.findAllByUser_Id(id);
+            allByIds = pointLUTransRepo.findAllByIds(allByUser_id.stream().map(Transport::getId)
+                    .collect(Collectors.toList()));
+
+            // Убираем дубликаты
+            for (PointLUTransport point : allByIds) {
+                if (!idTransport.equals(point.getTransport().getId())) {
+                    filteredArray.add(point);
+                    idTransport = point.getTransport().getId();
+                }
+            }
+
+            transports.put("transports", allByUser_id);
+            transports.put("pointsLUTransports", filteredArray);
+            return transports;
+        }
+
+        if (role.equals("ROLE_LEGAL_USER")) {
+            List<Transport> allByLegalUser_id = transportRepo.findAllByLegalUser_Id(id);
+            allByIds = pointLUTransRepo.findAllByIds(allByLegalUser_id.stream().map(Transport::getId)
+                    .collect(Collectors.toList()));
+
+            // Убираем дубликаты
+            for (PointLUTransport point : allByIds) {
+                if (!idTransport.equals(point.getTransport().getId())) {
+                    filteredArray.add(point);
+                    idTransport = point.getTransport().getId();
+                }
+            }
+
+            transports.put("transports", allByLegalUser_id);
+            transports.put("pointsLUTransports", filteredArray);
+            return transports;
+        }
+
+        return null;
+    }
+
+    public Map<String, Object> getActiveAndSentOffersTransports(long id, String role) {
+        Map<String, Object> transports = new HashMap<>();
+        List<TransportOffer> transportOffers;
+        List<Transport> transportsFromOffers;
+
+        List<Transport> transportsSend = new ArrayList<>();
+        List<Transport> transportsActive = new ArrayList<>();
+        List<Transport> transportsInProcessing = new ArrayList<>();
+        List<Transport> transportsComplete = new ArrayList<>();
+
+        List<PointLUTransport> filteredPointsDispatchedTransport = new ArrayList<>();
+        List<PointLUTransport> filteredPointsActiveTransport = new ArrayList<>();
+        List<PointLUTransport> filteredPointsTransportInProcessing = new ArrayList<>();
+        List<PointLUTransport> filteredPointsCompleteTransport = new ArrayList<>();
+
+        Long idTransport = 0L;
+
+
+        if (role.equals("ROLE_USER")) {
+            transportOffers = transportOfferRepo.findAll();
+            transportsFromOffers = transportRepo.getByTransportId();
+
+            for (TransportOffer transportOffer : transportOffers) {
+                // Заявка, которая была отправлена юзером
+                if (transportOffer.getUser() != null) {
+                    if (transportOffer.getUser().getId() == id) {
+                        if (transportOffer.getTransport().getStatus() != null &&
+                                !transportOffer.getTransport().getStatus().equals("Complete")) {
+                            transportsInProcessing.add(transportOffer.getTransport());
+                        } else if (transportOffer.getTransport().getStatus() != null &&
+                                transportOffer.getTransport().getStatus().equals("Complete")) {
+                            transportsComplete.add(transportOffer.getTransport());
+                        } else {
+                            transportsSend.add(transportOffer.getTransport());
+                        }
+                    }
+                }
+            }
+
+            for (Transport t : transportsFromOffers) {
+                // Заявка которую отправили юзеру
+                if (t.getUser() != null) {
+                    if (t.getUser().getId() == id) {
+                        if (t.getStatus() != null && !t.getStatus().equals("Complete")) {
+                            transportsInProcessing.add(t);
+                        } else if (t.getStatus() != null && t.getStatus().equals("Complete")) {
+                            transportsComplete.add(t);
+                        } else {
+                            transportsActive.add(t);
+                        }
+                    }
+                }
+            }
+
+            setPointsTransportsAndFilledMap(transports, transportsSend, transportsActive, transportsInProcessing,
+                    transportsComplete, filteredPointsDispatchedTransport, filteredPointsActiveTransport,
+                    filteredPointsTransportInProcessing, filteredPointsCompleteTransport, idTransport);
+
+            return transports;
+        } else {
+            transportOffers = transportOfferRepo.findAll();
+            transportsFromOffers = transportRepo.getByTransportId();
+
+            for (TransportOffer transportOffer : transportOffers) {
+                // Заявка, которая была отправлена легал юзером
+                if (transportOffer.getLegalUser() != null) {
+                    if (transportOffer.getLegalUser().getId() == id) {
+                        if (transportOffer.getTransport().getStatus() != null &&
+                                !transportOffer.getTransport().getStatus().equals("Complete")) {
+                            transportsInProcessing.add(transportOffer.getTransport());
+                        } else if (transportOffer.getTransport().getStatus() != null &&
+                                transportOffer.getTransport().getStatus().equals("Complete")) {
+                            transportsComplete.add(transportOffer.getTransport());
+                        } else {
+                            transportsSend.add(transportOffer.getTransport());
+                        }
+                    }
+                }
+            }
+
+            for (Transport t : transportsFromOffers) {
+                // Заявка которую отправили легал юзеру
+                if (t.getLegalUser() != null) {
+                    if (t.getLegalUser().getId() == id) {
+                        if (t.getStatus() != null && !t.getStatus().equals("Complete")) {
+                            transportsInProcessing.add(t);
+                        } else if (t.getStatus() != null && t.getStatus().equals("Complete")) {
+                            transportsComplete.add(t);
+                        } else {
+                            transportsActive.add(t);
+                        }
+                    }
+                }
+            }
+
+            setPointsTransportsAndFilledMap(transports, transportsSend, transportsActive, transportsInProcessing,
+                    transportsComplete, filteredPointsDispatchedTransport, filteredPointsActiveTransport,
+                    filteredPointsTransportInProcessing, filteredPointsCompleteTransport, idTransport);
+
+            return transports;
+        }
+    }
+
+    private void setPointsTransportsAndFilledMap(Map<String, Object> transports, List<Transport> transportsSend,
+                                                 List<Transport> transportsActive, List<Transport> transportsInProcessing,
+                                                 List<Transport> transportsComplete,
+                                                 List<PointLUTransport> filteredPointsDispatchedTransport,
+                                                 List<PointLUTransport> filteredPointsActiveTransport,
+                                                 List<PointLUTransport> filteredPointsTransportInProcessing,
+                                                 List<PointLUTransport> filteredPointsCompleteTransport, Long idTransport) {
+        List<PointLUTransport> allPointsDispatchedTransport;
+        List<PointLUTransport> allPointsActiveTransport;
+        List<PointLUTransport> allPointsInProcessingTransport;
+        List<PointLUTransport> allPointsCompleteTransport;
+
+        allPointsDispatchedTransport = pointLUTransRepo.findAllByIds(transportsSend.stream().map(Transport::getId)
+                .collect(Collectors.toList()));
+
+        allPointsActiveTransport = pointLUTransRepo.findAllByIds(transportsActive.stream().map(Transport::getId)
+                .collect(Collectors.toList()));
+
+        allPointsInProcessingTransport = pointLUTransRepo.findAllByIds(transportsInProcessing.stream().map(Transport::getId)
+                .collect(Collectors.toList()));
+
+        allPointsCompleteTransport = pointLUTransRepo.findAllByIds(transportsComplete.stream().map(Transport::getId)
+                .collect(Collectors.toList()));
+
+        // Убираем дубликаты
+        for (PointLUTransport point : allPointsDispatchedTransport) {
+            if (!idTransport.equals(point.getTransport().getId())) {
+                filteredPointsDispatchedTransport.add(point);
+                idTransport = point.getTransport().getId();
+            }
+        }
+
+        if (idTransport != 0L) {
+            idTransport = 0L;
+        }
+
+        for (PointLUTransport point : allPointsActiveTransport) {
+            if (!idTransport.equals(point.getTransport().getId())) {
+                filteredPointsActiveTransport.add(point);
+                idTransport = point.getTransport().getId();
+            }
+        }
+
+        if (idTransport != 0L) {
+            idTransport = 0L;
+        }
+
+        for (PointLUTransport point : allPointsInProcessingTransport) {
+            if (!idTransport.equals(point.getTransport().getId())) {
+                filteredPointsTransportInProcessing.add(point);
+                idTransport = point.getTransport().getId();
+            }
+        }
+
+        if (idTransport != 0L) {
+            idTransport = 0L;
+        }
+
+        for (PointLUTransport point : allPointsCompleteTransport) {
+            if (!idTransport.equals(point.getTransport().getId())) {
+                filteredPointsCompleteTransport.add(point);
+                idTransport = point.getTransport().getId();
+            }
+        }
+
+        transports.put("transportsSend", transportsSend);
+        transports.put("pointsLUDispatchedTransport", filteredPointsDispatchedTransport);
+        transports.put("transportsActive", transportsActive);
+        transports.put("pointsLUActiveTransport", filteredPointsActiveTransport);
+        transports.put("transportsInProcessing", transportsInProcessing);
+        transports.put("pointsLUTransportInProcessing", filteredPointsTransportInProcessing);
+        transports.put("transportsComplete", transportsComplete);
+        transports.put("pointsLUTransportComplete", filteredPointsCompleteTransport);
+    }
+
+    public List<Transport> getSentOffersTransports(long id, String role) {
+        List<TransportOffer> transportOffers;
+        List<Transport> transportsSendFrom = new ArrayList<>();
+
+        if (role.equals("ROLE_USER")) {
+            transportOffers = transportOfferRepo.findAll();
+
+            // Находим все грузы из заявок, которые отправил юзер
+            for (TransportOffer transportOffer : transportOffers) {
+                // Заявка, которая была отправлена юзером
+                if (transportOffer.getUser() != null) {
+                    if (transportOffer.getUser().getId() == id) {
+                        transportsSendFrom.add(transportOffer.getTransport());
+                    }
+                }
+            }
+
+            return transportsSendFrom;
+        }
+
+        if (role.equals("ROLE_LEGAL_USER")) {
+            transportOffers = transportOfferRepo.findAll();
+
+            // Находим все грузы из заявок, которые отправил легал юзер
+            for (TransportOffer transportOffer : transportOffers) {
+                // Заявка, которая была отправлена легал юзером
+                if (transportOffer.getLegalUser() != null) {
+                    if (transportOffer.getLegalUser().getId() == id) {
+                        transportsSendFrom.add(transportOffer.getTransport());
+                    }
+                }
+            }
+
+            return transportsSendFrom;
+        }
+
+        return null;
+    }
+
+    public Transport changeStatusTransport(Long id) {
+        Transport transport = transportRepo.findById(id).get();
+
+        if (transport.getStatus() == null || transport.getStatus().equals("")) {
+            transport.setStatus("In processing");
+        } else if (transport.getStatus().equals("In processing")) {
+            transport.setStatus("Loading");
+        } else if (transport.getStatus().equals("Loading")) {
+            transport.setStatus("In way");
+        } else if (transport.getStatus().equals("In way")) {
+            transport.setStatus("Complete");
+        }
+
+        transportRepo.save(transport);
+
+        return transport;
     }
 }
