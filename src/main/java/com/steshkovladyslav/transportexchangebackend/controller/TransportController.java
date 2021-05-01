@@ -61,7 +61,6 @@ public class TransportController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "3") int pageSize
     ) {
-        System.out.println(pageSize);
         return transportService.searchTransport(transportRequest, page, pageSize);
     }
 

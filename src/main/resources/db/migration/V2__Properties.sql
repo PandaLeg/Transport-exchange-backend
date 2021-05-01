@@ -28,7 +28,7 @@ insert into properties values(17, 'Без ворот', 'Without gates', 'Без 
 
 insert into properties values(18, 'TIR', 'TIR', 'TIR', 'permissionType');
 insert into properties values(19, 'CMR', 'CMR', 'CMR', 'permissionType');
-insert into properties values(20, 'По декларации', 'By declaration', 'По декларації', 'permissionType');
+insert into properties values(20, 'По декларации', 'By declaration', 'За декларацією', 'permissionType');
 insert into properties values(21, 'Медкнижка', 'Medical record', 'Медкнига', 'permissionType');
 insert into properties values(22, 'T1', 'T1', 'T1', 'permissionType');
 insert into properties values(23, 'ЕКМТ', 'CEMT', 'ЕКМТ', 'permissionType');

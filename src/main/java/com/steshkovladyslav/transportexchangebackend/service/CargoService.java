@@ -55,13 +55,12 @@ public class CargoService {
             Cargo cargo,
             PropertiesRequest propertiesCargo,
             List<PointLUCargo> placesCargo,
-            String lang,
             MultipartFile firstFile,
             MultipartFile secondFile,
             MultipartFile thirdFile
     ) {
         try {
-            return saveCargo(token, cargo, propertiesCargo, placesCargo, lang, firstFile, secondFile,
+            return saveCargo(token, cargo, propertiesCargo, placesCargo, firstFile, secondFile,
                     thirdFile);
         } catch (IOException e) {
             e.printStackTrace();
@@ -79,7 +78,6 @@ public class CargoService {
             Cargo cargo,
             PropertiesRequest propertiesCargo,
             List<PointLUCargo> placesCargo,
-            String lang,
             MultipartFile firstFile,
             MultipartFile secondFile,
             MultipartFile thirdFile
@@ -97,7 +95,7 @@ public class CargoService {
             if (cargoTransportGeneral.setUserLegalUser(token, cargo, null))
                 return null;
 
-            addPropertiesCargo(cargo, propertiesCargo, lang);
+            addPropertiesCargo(cargo, propertiesCargo);
             cargoRepo.save(cargo);
             addPlacesCargo(cargo, placesCargo);
 
@@ -133,49 +131,46 @@ public class CargoService {
         cargoRepo.save(cargo);
     }
 
-    private void addPropertiesCargo(Cargo cargo, PropertiesRequest propertiesCargo, String lang) {
-        if (lang.equals("ru")) {
-
-            if (propertiesCargo.getTypesLoadingTruck() != null) {
-                for (String loading : propertiesCargo.getTypesLoadingTruck()) {
-                    Property byRuName = propertyRepo.findByRuNameAndProperty(loading, "loading");
-                    cargo.getPropertiesCargo().add(byRuName);
-                }
-            }
-
-            if (propertiesCargo.getTypesUnloadingTruck() != null) {
-                for (String unloading : propertiesCargo.getTypesUnloadingTruck()) {
-                    Property byRuName = propertyRepo.findByRuNameAndProperty(unloading, "unloading");
-                    cargo.getPropertiesCargo().add(byRuName);
-                }
-            }
-
-            if (propertiesCargo.getPermissions() != null) {
-                for (String permission : propertiesCargo.getPermissions()) {
-                    Property byRuName = propertyRepo.findByRuName(permission);
-                    cargo.getPropertiesCargo().add(byRuName);
-                }
-            }
-
-            if (propertiesCargo.getTypePayment() != null && !propertiesCargo.getTypePayment().equals("")) {
-                Property byRuName = propertyRepo.findByRuName(propertiesCargo.getTypePayment());
+    private void addPropertiesCargo(Cargo cargo, PropertiesRequest propertiesCargo) {
+        if (propertiesCargo.getTypesLoadingTruck() != null) {
+            for (String loading : propertiesCargo.getTypesLoadingTruck()) {
+                Property byRuName = propertyRepo.findByNameAndProperty(loading, "loading");
                 cargo.getPropertiesCargo().add(byRuName);
             }
+        }
 
-            if (propertiesCargo.getCostPer() != null && !propertiesCargo.getCostPer().equals("")) {
-                Property byRuName = propertyRepo.findByRuName(propertiesCargo.getCostPer());
+        if (propertiesCargo.getTypesUnloadingTruck() != null) {
+            for (String unloading : propertiesCargo.getTypesUnloadingTruck()) {
+                Property byRuName = propertyRepo.findByNameAndProperty(unloading, "unloading");
                 cargo.getPropertiesCargo().add(byRuName);
             }
+        }
 
-            if (propertiesCargo.getPaymentForm() != null && !propertiesCargo.getPaymentForm().equals("")) {
-                Property byRuName = propertyRepo.findByRuName(propertiesCargo.getPaymentForm());
+        if (propertiesCargo.getPermissions() != null) {
+            for (String permission : propertiesCargo.getPermissions()) {
+                Property byRuName = propertyRepo.findByName(permission);
                 cargo.getPropertiesCargo().add(byRuName);
             }
+        }
 
-            if (propertiesCargo.getPaymentTime() != null && !propertiesCargo.getPaymentTime().equals("")) {
-                Property byRuName = propertyRepo.findByRuName(propertiesCargo.getPaymentTime());
-                cargo.getPropertiesCargo().add(byRuName);
-            }
+        if (propertiesCargo.getTypePayment() != null && !propertiesCargo.getTypePayment().equals("")) {
+            Property byRuName = propertyRepo.findByName(propertiesCargo.getTypePayment());
+            cargo.getPropertiesCargo().add(byRuName);
+        }
+
+        if (propertiesCargo.getCostPer() != null && !propertiesCargo.getCostPer().equals("")) {
+            Property byRuName = propertyRepo.findByName(propertiesCargo.getCostPer());
+            cargo.getPropertiesCargo().add(byRuName);
+        }
+
+        if (propertiesCargo.getPaymentForm() != null && !propertiesCargo.getPaymentForm().equals("")) {
+            Property byRuName = propertyRepo.findByName(propertiesCargo.getPaymentForm());
+            cargo.getPropertiesCargo().add(byRuName);
+        }
+
+        if (propertiesCargo.getPaymentTime() != null && !propertiesCargo.getPaymentTime().equals("")) {
+            Property byRuName = propertyRepo.findByName(propertiesCargo.getPaymentTime());
+            cargo.getPropertiesCargo().add(byRuName);
         }
     }
 
@@ -219,7 +214,6 @@ public class CargoService {
             }
 
             if (cargoRequest.getPaymentForm() == null && cargoRequest.getPaymentTime() == null) {
-                System.out.println("FORM = 0 & TIME = 0");
                 filledCargoMap(cargoMap, cargo, pointLURepo.findAllByIds(resultId), pageCargo);
                 return cargoMap;
             }
@@ -275,43 +269,67 @@ public class CargoService {
         // Если заполнена только форма оплаты
         if (cargoRequest.getPaymentForm() != null && cargoRequest.getPaymentTime() == null) {
             for (Cargo item : cargo) {
-                for (Property property : item.getPropertiesCargo()) {
-                    if (property.getRuName().equals(cargoRequest.getPaymentForm())) {
+                Property property = getProperty(item, "paymentForm");
+
+                if (property != null) {
+                    if (property.getRuName().equals(cargoRequest.getPaymentForm()) ||
+                            property.getEnName().equals(cargoRequest.getPaymentForm()) ||
+                            property.getUaName().equals(cargoRequest.getPaymentForm())) {
                         paymentFormList.add(item);
                     }
                 }
             }
+
+            if (paymentFormList.isEmpty()) {
+                cargo = null;
+            }
             // Если заполнено только поле момента оплаты
         } else if (cargoRequest.getPaymentTime() != null && cargoRequest.getPaymentForm() == null) {
-            // Заполнение грузов при заполненном моменте оплаты и с введённой датой
+            // Заполнение грузов при заполненном моменте оплаты
             for (Cargo item : cargo) {
-                for (Property property : item.getPropertiesCargo()) {
-                    if (property.getRuName().equals(cargoRequest.getPaymentTime())) {
+                Property property = getProperty(item, "paymentTime");
+
+                if (property != null) {
+                    if (property.getRuName().equals(cargoRequest.getPaymentTime()) ||
+                            property.getEnName().equals(cargoRequest.getPaymentTime()) ||
+                            property.getUaName().equals(cargoRequest.getPaymentTime())) {
                         paymentTimeList.add(item);
                     }
                 }
+            }
+
+            if (paymentTimeList.isEmpty()) {
+                cargo = null;
             }
             // Если заполнены оба поля
         } else {
             System.out.println("ДАТА ЗАПОЛНЕНА");
             for (Cargo item : cargo) {
-                for (Property property : item.getPropertiesCargo()) {
-                    if (property.getRuName().equals(cargoRequest.getPaymentForm())) {
+                Property property = getProperty(item, "paymentForm");
+
+                if (property != null) {
+                    if (property.getRuName().equals(cargoRequest.getPaymentForm()) ||
+                            property.getEnName().equals(cargoRequest.getPaymentForm()) ||
+                            property.getUaName().equals(cargoRequest.getPaymentForm())) {
                         paymentFormList.add(item);
                     }
                 }
             }
 
             for (Cargo item : cargo) {
-                for (Property property : item.getPropertiesCargo()) {
-                    if (property.getRuName().equals(cargoRequest.getPaymentTime())) {
+                Property property = getProperty(item, "paymentTime");
+
+                if (property != null) {
+                    if (property.getRuName().equals(cargoRequest.getPaymentTime()) ||
+                            property.getEnName().equals(cargoRequest.getPaymentTime()) ||
+                            property.getUaName().equals(cargoRequest.getPaymentTime())) {
                         paymentTimeList.add(item);
                     }
                 }
             }
 
             if (paymentFormList.isEmpty() || paymentTimeList.isEmpty()) {
-                cargo = new ArrayList<>();
+                cargo = null;
             }
 
             if (!paymentFormList.isEmpty() && !paymentTimeList.isEmpty()) {
@@ -320,7 +338,7 @@ public class CargoService {
                     for (Cargo value : paymentTimeList) {
                         if (item.getId().equals(value.getId())) {
                             if (checkFilledFormAndTimeList) {
-                                cargo.clear();
+                                cargo = new ArrayList<>();
                                 checkFilledFormAndTimeList = false;
                             }
                             cargo.add(item);
@@ -341,8 +359,13 @@ public class CargoService {
             cargo = new ArrayList<>(paymentTimeList);
         }
 
-
         return cargo;
+    }
+
+    private Property getProperty(Cargo item, String payment) {
+        return item.getPropertiesCargo().stream()
+                .filter(i -> payment.equals(i.getProperty()))
+                .findFirst().orElse(null);
     }
 
     private void replacePlusOnSpace(CargoRequest cargoRequest) {

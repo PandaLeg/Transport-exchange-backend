@@ -49,12 +49,11 @@ public class CargoController {
             @RequestPart("cargo") Cargo cargo,
             @RequestPart("placesCargo") List<PointLUCargo> placesCargo,
             @RequestPart("propertiesCargo") PropertiesRequest propertiesCargo,
-            @RequestParam("lang") String lang,
             @RequestPart(value = "firstPhoto", required = false) MultipartFile firstFile,
             @RequestPart(value = "secondPhoto", required = false) MultipartFile secondFile,
             @RequestPart(value = "thirdPhoto", required = false) MultipartFile thirdFile
     ) {
-        return cargoService.addCargo(token, cargo, propertiesCargo, placesCargo, lang, firstFile, secondFile,
+        return cargoService.addCargo(token, cargo, propertiesCargo, placesCargo, firstFile, secondFile,
                 thirdFile);
     }
 
