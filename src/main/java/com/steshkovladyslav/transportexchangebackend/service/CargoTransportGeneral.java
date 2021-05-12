@@ -1,9 +1,6 @@
 package com.steshkovladyslav.transportexchangebackend.service;
 
-import com.steshkovladyslav.transportexchangebackend.model.Cargo;
-import com.steshkovladyslav.transportexchangebackend.model.LegalUser;
-import com.steshkovladyslav.transportexchangebackend.model.Transport;
-import com.steshkovladyslav.transportexchangebackend.model.User;
+import com.steshkovladyslav.transportexchangebackend.model.*;
 import com.steshkovladyslav.transportexchangebackend.repo.LegalUserRepo;
 import com.steshkovladyslav.transportexchangebackend.repo.UserRepo;
 import com.steshkovladyslav.transportexchangebackend.security.jwt.JwtUtils;

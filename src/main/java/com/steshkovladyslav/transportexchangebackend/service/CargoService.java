@@ -52,6 +52,7 @@ public class CargoService {
 
     public Cargo addCargo(
             String token,
+            String typeTransportation,
             Cargo cargo,
             PropertiesRequest propertiesCargo,
             List<PointLUCargo> placesCargo,
@@ -60,7 +61,7 @@ public class CargoService {
             MultipartFile thirdFile
     ) {
         try {
-            return saveCargo(token, cargo, propertiesCargo, placesCargo, firstFile, secondFile,
+            return saveCargo(token, typeTransportation, cargo, propertiesCargo, placesCargo, firstFile, secondFile,
                     thirdFile);
         } catch (IOException e) {
             e.printStackTrace();
@@ -75,6 +76,7 @@ public class CargoService {
 
     private Cargo saveCargo(
             String token,
+            String typeTransportation,
             Cargo cargo,
             PropertiesRequest propertiesCargo,
             List<PointLUCargo> placesCargo,
@@ -94,6 +96,7 @@ public class CargoService {
         if (cargo != null) {
             if (cargoTransportGeneral.setUserLegalUser(token, cargo, null))
                 return null;
+            cargo.setTypeTransportation(typeTransportation);
 
             addPropertiesCargo(cargo, propertiesCargo);
             cargoRepo.save(cargo);
@@ -134,43 +137,51 @@ public class CargoService {
     private void addPropertiesCargo(Cargo cargo, PropertiesRequest propertiesCargo) {
         if (propertiesCargo.getTypesLoadingTruck() != null) {
             for (String loading : propertiesCargo.getTypesLoadingTruck()) {
-                Property byRuName = propertyRepo.findByNameAndProperty(loading, "loading");
-                cargo.getPropertiesCargo().add(byRuName);
+                Property property = propertyRepo.findByNameAndProperty(loading, "loading");
+                cargo.getPropertiesCargo().add(property);
             }
         }
 
         if (propertiesCargo.getTypesUnloadingTruck() != null) {
             for (String unloading : propertiesCargo.getTypesUnloadingTruck()) {
-                Property byRuName = propertyRepo.findByNameAndProperty(unloading, "unloading");
-                cargo.getPropertiesCargo().add(byRuName);
+                Property property = propertyRepo.findByNameAndProperty(unloading, "unloading");
+                cargo.getPropertiesCargo().add(property);
+            }
+        }
+
+        if (propertiesCargo.getContainerLoading() != null) {
+            for (String containerLoading : propertiesCargo.getContainerLoading()) {
+                Property property = propertyRepo.findByNameAndProperty(containerLoading, "containerLoading");
+                cargo.getPropertiesCargo().add(property);
             }
         }
 
         if (propertiesCargo.getPermissions() != null) {
+            System.out.println(propertiesCargo.getPermissions());
             for (String permission : propertiesCargo.getPermissions()) {
-                Property byRuName = propertyRepo.findByName(permission);
-                cargo.getPropertiesCargo().add(byRuName);
+                Property property = propertyRepo.findByName(permission);
+                cargo.getPropertiesCargo().add(property);
             }
         }
 
         if (propertiesCargo.getTypePayment() != null && !propertiesCargo.getTypePayment().equals("")) {
-            Property byRuName = propertyRepo.findByName(propertiesCargo.getTypePayment());
-            cargo.getPropertiesCargo().add(byRuName);
+            Property property = propertyRepo.findByName(propertiesCargo.getTypePayment());
+            cargo.getPropertiesCargo().add(property);
         }
 
         if (propertiesCargo.getCostPer() != null && !propertiesCargo.getCostPer().equals("")) {
-            Property byRuName = propertyRepo.findByName(propertiesCargo.getCostPer());
-            cargo.getPropertiesCargo().add(byRuName);
+            Property property = propertyRepo.findByName(propertiesCargo.getCostPer());
+            cargo.getPropertiesCargo().add(property);
         }
 
         if (propertiesCargo.getPaymentForm() != null && !propertiesCargo.getPaymentForm().equals("")) {
-            Property byRuName = propertyRepo.findByName(propertiesCargo.getPaymentForm());
-            cargo.getPropertiesCargo().add(byRuName);
+            Property property = propertyRepo.findByName(propertiesCargo.getPaymentForm());
+            cargo.getPropertiesCargo().add(property);
         }
 
         if (propertiesCargo.getPaymentTime() != null && !propertiesCargo.getPaymentTime().equals("")) {
-            Property byRuName = propertyRepo.findByName(propertiesCargo.getPaymentTime());
-            cargo.getPropertiesCargo().add(byRuName);
+            Property property = propertyRepo.findByName(propertiesCargo.getPaymentTime());
+            cargo.getPropertiesCargo().add(property);
         }
     }
 
@@ -178,6 +189,7 @@ public class CargoService {
         List<Cargo> cargo;
         Set<Long> tempCargoId;
         List<Long> resultId;
+        List<String> typesTransportation = new ArrayList<>();
 
         Page<Cargo> pageCargo;
         Map<String, Object> cargoMap = new HashMap<>();
@@ -186,21 +198,38 @@ public class CargoService {
 
         replacePlusOnSpace(cargoRequest);
 
+        // Формируем список типов перевозки
+        for (String transportation : cargoRequest.getTypesTransportation()) {
+            if (transportation.equals("Автоперевозка") || transportation.equals("Road transportation") ||
+                    transportation.equals("Автоперевезення")) {
+                typesTransportation.add("roadTransportation");
+            }
+            if(transportation.equals("Морская перевозка") || transportation.equals("Sea transportation") ||
+                    transportation.equals("Морське перевезення")){
+                typesTransportation.add("seaTransportation");
+            }
+
+            if(transportation.equals("Ж/Д перевозка") || transportation.equals("Railway transportation") ||
+                    transportation.equals("Залізничне перевезення")){
+                typesTransportation.add("railwayTransportation");
+            }
+        }
+
         // Находим совпадение по странам и городам
         tempCargoId = cargoRepo.getCargoIds(cargoRequest.getCountryFrom(), cargoRequest.getCityFrom(),
                 cargoRequest.getCountryTo(), cargoRequest.getCityTo());
 
         if (cargoRequest.getLoadingDateFrom() == null && cargoRequest.getLoadingDateBy() == null) {
-            pageCargo = cargoRepo.searchCargoWithParams(tempCargoId, cargoRequest.getWeightFrom(),
-                    cargoRequest.getWeightUpTo(), cargoRequest.getVolumeFrom(), cargoRequest.getVolumeUpTo(),
-                    cargoRequest.getNameCargo(), cargoRequest.getBodyType(), pageable);
+            pageCargo = cargoRepo.searchCargoWithParams(typesTransportation, tempCargoId,
+                    cargoRequest.getWeightFrom(), cargoRequest.getWeightUpTo(), cargoRequest.getVolumeFrom(),
+                    cargoRequest.getVolumeUpTo(), cargoRequest.getNameCargo(), cargoRequest.getBodyType(), pageable);
 
             cargo = pageCargo.getContent();
 
             // Возврат всех мест загрузки и разгрузки груза
             resultId = getIdCargoPlaces(cargo);
         } else {
-            pageCargo = getCargoByDate(cargoRequest, tempCargoId, pageable);
+            pageCargo = getCargoByDate(cargoRequest, tempCargoId, typesTransportation, pageable);
 
             cargo = pageCargo.getContent();
 
@@ -243,19 +272,20 @@ public class CargoService {
         return cargo.stream().map(Cargo::getId).collect(Collectors.toList());
     }
 
-    private Page<Cargo> getCargoByDate(CargoRequest cargoRequest, Set<Long> tempCargoId, Pageable pageable) {
+    private Page<Cargo> getCargoByDate(CargoRequest cargoRequest, Set<Long> tempCargoId, List<String> typesTransportation,
+                                       Pageable pageable) {
         if (cargoRequest.getLoadingDateFrom() != null && cargoRequest.getLoadingDateBy() == null) {
-            return cargoRepo.findByLoadingDateFrom(tempCargoId, cargoRequest.getLoadingDateFrom(),
+            return cargoRepo.findByLoadingDateFrom(typesTransportation, tempCargoId, cargoRequest.getLoadingDateFrom(),
                     cargoRequest.getWeightFrom(), cargoRequest.getWeightUpTo(), cargoRequest.getVolumeFrom(),
                     cargoRequest.getVolumeUpTo(), cargoRequest.getNameCargo(), cargoRequest.getBodyType(),
                     pageable);
         } else if (cargoRequest.getLoadingDateBy() != null && cargoRequest.getLoadingDateFrom() == null) {
-            return cargoRepo.findByLoadingDateBy(tempCargoId, cargoRequest.getLoadingDateBy(),
+            return cargoRepo.findByLoadingDateBy(typesTransportation, tempCargoId, cargoRequest.getLoadingDateBy(),
                     cargoRequest.getWeightFrom(), cargoRequest.getWeightUpTo(), cargoRequest.getVolumeFrom(),
                     cargoRequest.getVolumeUpTo(), cargoRequest.getNameCargo(), cargoRequest.getBodyType(),
                     pageable);
         } else {
-            return cargoRepo.getAllBetweenTwoDate(tempCargoId, cargoRequest.getLoadingDateFrom(),
+            return cargoRepo.getAllBetweenTwoDate(typesTransportation, tempCargoId, cargoRequest.getLoadingDateFrom(),
                     cargoRequest.getLoadingDateBy(), cargoRequest.getWeightFrom(), cargoRequest.getWeightUpTo(),
                     cargoRequest.getVolumeFrom(), cargoRequest.getVolumeUpTo(), cargoRequest.getNameCargo(),
                     cargoRequest.getBodyType(), pageable);

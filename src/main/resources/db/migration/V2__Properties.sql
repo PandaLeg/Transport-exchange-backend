@@ -32,19 +32,23 @@ insert into properties values(20, 'По декларации', 'By declaration',
 insert into properties values(21, 'Медкнижка', 'Medical record', 'Медкнига', 'permissionType');
 insert into properties values(22, 'T1', 'T1', 'T1', 'permissionType');
 insert into properties values(23, 'ЕКМТ', 'CEMT', 'ЕКМТ', 'permissionType');
+insert into properties values(24, 'Ж/Д накладная', 'Railway Bill', 'Залізнична накладна', 'permissionType');
 
-insert into properties values(24, 'Сумма', 'Amount', 'Сума', 'typePayment');
-insert into properties values(25, 'Запрос ставки', 'Bid request', 'Запит ставки', 'typePayment');
+insert into properties values(25, 'Сумма', 'Amount', 'Сума', 'typePayment');
+insert into properties values(26, 'Запрос ставки', 'Bid request', 'Запит ставки', 'typePayment');
 
-insert into properties values(26, 'км', 'km', 'км', 'costPer');
-insert into properties values(27, 'сутки', 'day', 'добу', 'costPer');
+insert into properties values(27, 'км', 'km', 'км', 'costPer');
+insert into properties values(28, 'сутки', 'day', 'добу', 'costPer');
 
-insert into properties values(28, 'наличными', 'cash','готівкою', 'paymentForm');
-insert into properties values(29, 'безналичными', 'non-cash', 'безготівкою', 'paymentForm');
-insert into properties values(30, 'комбинированная', 'combined', 'комбінована', 'paymentForm');
-insert into properties values(31, 'карта', 'card', 'карта', 'paymentForm');
-insert into properties values(32, 'электронный платёж', 'electronic payment', 'електронний платіж', 'paymentForm');
+insert into properties values(29, 'наличными', 'cash','готівкою', 'paymentForm');
+insert into properties values(30, 'безналичными', 'non-cash', 'безготівкою', 'paymentForm');
+insert into properties values(31, 'комбинированная', 'combined', 'комбінована', 'paymentForm');
+insert into properties values(32, 'карта', 'card', 'карта', 'paymentForm');
+insert into properties values(33, 'электронный платёж', 'electronic payment', 'електронний платіж', 'paymentForm');
 
-insert into properties values(33, 'на загрузке', 'on loading', 'на завантаженні', 'paymentTime');
-insert into properties values(34, 'на выгрузке', 'unloading', 'при розвантаженні', 'paymentTime');
-insert into properties values(35, 'по оригиналам', 'by originals', 'за оригіналами', 'paymentTime');
+insert into properties values(34, 'на загрузке', 'on loading', 'на завантаженні', 'paymentTime');
+insert into properties values(35, 'на выгрузке', 'unloading', 'при розвантаженні', 'paymentTime');
+insert into properties values(36, 'по оригиналам', 'by originals', 'за оригіналами', 'paymentTime');
+
+insert into properties values(37, 'LCL(неполная)', 'LCL(incomplete)', 'LCL(неповна)', 'containerLoading');
+insert into properties values(38, 'FCL(полная)', 'FCL(full)', 'FCL(повна)', 'containerLoading');

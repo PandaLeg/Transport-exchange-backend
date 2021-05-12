@@ -25,6 +25,12 @@ public class Cargo implements Serializable {
     private Long id;
 
     private String name;
+    private String nameContainer;
+
+    private Integer count;
+
+    /* Тип */
+    private String typeTransportation;
 
     /* Габариты */
     private String weightFrom;
@@ -47,6 +53,9 @@ public class Cargo implements Serializable {
 
     /* Транспорт */
     private String bodyType;
+
+    /* Соглашения */
+    private String incoterms;
 
     /* Оплата */
     private String cost;
@@ -112,11 +121,15 @@ public class Cargo implements Serializable {
     public Cargo() {
     }
 
-    public Cargo(String name, String weightFrom, String weightUpTo, String volumeFrom, String volumeUpTo,
-                 String lengthCargo, String widthCargo, String heightCargo, String adr, LocalDate loadingDateFrom,
-                 LocalDate loadingDateBy, String bodyType, String cost, String currency, String prepayment,
-                 String additional) {
+    public Cargo(String name, String nameContainer, Integer count, String typeTransportation,
+                 String weightFrom, String weightUpTo, String volumeFrom, String volumeUpTo, String lengthCargo,
+                 String widthCargo, String heightCargo, String adr, LocalDate loadingDateFrom, LocalDate loadingDateBy,
+                 String bodyType, String incoterms, String cost, String currency, String prepayment, String additional,
+                 String status) {
         this.name = name;
+        this.nameContainer = nameContainer;
+        this.count = count;
+        this.typeTransportation = typeTransportation;
         this.weightFrom = weightFrom;
         this.weightUpTo = weightUpTo;
         this.volumeFrom = volumeFrom;
@@ -128,9 +141,11 @@ public class Cargo implements Serializable {
         this.loadingDateFrom = loadingDateFrom;
         this.loadingDateBy = loadingDateBy;
         this.bodyType = bodyType;
+        this.incoterms = incoterms;
         this.cost = cost;
         this.currency = currency;
         this.prepayment = prepayment;
         this.additional = additional;
+        this.status = status;
     }
 }

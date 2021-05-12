@@ -1,9 +1,6 @@
 package com.steshkovladyslav.transportexchangebackend.controller;
 
-import com.steshkovladyslav.transportexchangebackend.model.Cargo;
-import com.steshkovladyslav.transportexchangebackend.model.CargoOffer;
-import com.steshkovladyslav.transportexchangebackend.model.PhotoCargo;
-import com.steshkovladyslav.transportexchangebackend.model.PointLUCargo;
+import com.steshkovladyslav.transportexchangebackend.model.*;
 import com.steshkovladyslav.transportexchangebackend.payload.request.PropertiesRequest;
 import com.steshkovladyslav.transportexchangebackend.payload.request.cargo.CargoRequest;
 import com.steshkovladyslav.transportexchangebackend.service.CargoService;
@@ -19,7 +16,7 @@ import java.util.Map;
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/cargo")
-public class CargoController {
+public class CargoController{
     private final CargoService cargoService;
 
     @Autowired
@@ -46,6 +43,7 @@ public class CargoController {
     @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
     public Cargo addCargo(
             @RequestParam String token,
+            @RequestParam String typeTransportation,
             @RequestPart("cargo") Cargo cargo,
             @RequestPart("placesCargo") List<PointLUCargo> placesCargo,
             @RequestPart("propertiesCargo") PropertiesRequest propertiesCargo,
@@ -53,8 +51,8 @@ public class CargoController {
             @RequestPart(value = "secondPhoto", required = false) MultipartFile secondFile,
             @RequestPart(value = "thirdPhoto", required = false) MultipartFile thirdFile
     ) {
-        return cargoService.addCargo(token, cargo, propertiesCargo, placesCargo, firstFile, secondFile,
-                thirdFile);
+        return cargoService.addCargo(token, typeTransportation, cargo, propertiesCargo, placesCargo, firstFile,
+                secondFile, thirdFile);
     }
 
     @PostMapping("/search-cargo")
@@ -127,4 +125,19 @@ public class CargoController {
     ){
         return cargoService.changeStatusCargo(id);
     }
+
+    /*@PostMapping(value = "/add-sea-cargo", consumes = {"multipart/form-data"})
+    @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
+    public SeaCargo addSeaCargo(
+            @RequestParam String token,
+            @RequestPart("seaCargo") SeaCargo seaCargo,
+            @RequestPart("placesCargo") List<PointLUCargo> placesCargo,
+            @RequestPart("propertiesCargo") PropertiesRequest propertiesCargo,
+            @RequestPart(value = "firstPhoto", required = false) MultipartFile firstFile,
+            @RequestPart(value = "secondPhoto", required = false) MultipartFile secondFile,
+            @RequestPart(value = "thirdPhoto", required = false) MultipartFile thirdFile
+    ) {
+        return seaCargoService.addSeaCargo(token, seaCargo, propertiesCargo, placesCargo, firstFile, secondFile,
+                thirdFile);
+    }*/
 }

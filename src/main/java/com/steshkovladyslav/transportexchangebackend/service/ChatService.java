@@ -265,8 +265,6 @@ public class ChatService {
                                            long idChat) {
         Map<String, Object> messagesMap = new HashMap<>();
 
-        List<ChatMessage> userMessages;
-        List<ChatMessage> userCompanionMessages;
         List<ChatMessage> messages;
 
         if (role.equals("ROLE_USER")) {
@@ -276,8 +274,6 @@ public class ChatService {
             if (roleUserCompanion.equals("ROLE_USER")) {
                 User userCompanion = userRepo.findById(idUserCompanion);
 
-                userMessages = chatMessageRepo.findAllByUser_Id(user.getId());
-                userCompanionMessages = chatMessageRepo.findAllByUser_Id(userCompanion.getId());
                 messages = chatMessageRepo.findAllByChat_Id(idChat);
 
                 messagesMap.put("user", user);
@@ -289,8 +285,6 @@ public class ChatService {
             } else {
                 LegalUser userCompanion = legalUserRepo.findById(idUserCompanion);
 
-                userMessages = chatMessageRepo.findAllByUser_Id(user.getId());
-                userCompanionMessages = chatMessageRepo.findAllByLegalUser_Id(userCompanion.getId());
                 messages = chatMessageRepo.findAllByChat_Id(idChat);
 
                 messagesMap.put("user", user);
@@ -306,9 +300,6 @@ public class ChatService {
             if (roleUserCompanion.equals("ROLE_USER")) {
                 User userCompanion = userRepo.findById(idUserCompanion);
 
-                userMessages = chatMessageRepo.findAllByLegalUser_Id(legalUser.getId());
-                userCompanionMessages = chatMessageRepo.findAllByUser_Id(userCompanion.getId());
-
                 messages = chatMessageRepo.findAllByChat_Id(idChat);
 
                 messagesMap.put("user", legalUser);
@@ -319,9 +310,6 @@ public class ChatService {
                 // If LegalUser write LegalUser
             } else {
                 LegalUser userCompanion = legalUserRepo.findById(idUserCompanion);
-
-                userMessages = chatMessageRepo.findAllByLegalUser_Id(legalUser.getId());
-                userCompanionMessages = chatMessageRepo.findAllByLegalUser_Id(userCompanion.getId());
 
                 messages = chatMessageRepo.findAllByChat_Id(idChat);
 

@@ -2,6 +2,10 @@
 create table cargo (
     id int8 not null,
     name varchar(100) not null,
+    type_transportation varchar(100) not null,
+    name_container varchar(100),
+    name_car varchar(100),
+    count int4,
     weight_from varchar(100),
     weight_up_to varchar(100),
     volume_from varchar(100),
@@ -13,6 +17,7 @@ create table cargo (
     loading_date_from date not null,
     loading_date_by date not null,
     body_type varchar(100) not null,
+    incoterms varchar(100),
     cost varchar(20),
     currency varchar(10),
     prepayment varchar(20),
@@ -22,6 +27,33 @@ create table cargo (
     legal_user_id int8,
     primary key (id)
 );
+
+/*create table sea_cargo (
+    id int8 not null,
+    name varchar(100) not null,
+    name_container varchar(100) not null,
+    count_container int4,
+    weight_from varchar(100),
+    weight_up_to varchar(100),
+    volume_from varchar(100),
+    volume_up_to varchar(100),
+    length_cargo varchar(50),
+    width_cargo varchar(50),
+    height_cargo varchar(50),
+    imo varchar(50),
+    loading_date_from date not null,
+    loading_date_by date not null,
+    vessel_type varchar(100) not null,
+    incoterms varchar(100),
+    cost varchar(20),
+    currency varchar(10),
+    prepayment varchar(20),
+    additional varchar(255),
+    status varchar(100),
+    user_id int8,
+    legal_user_id int8,
+    primary key (id)
+);*/
 
 create table point_lu_cargo (
     id int8 not null,

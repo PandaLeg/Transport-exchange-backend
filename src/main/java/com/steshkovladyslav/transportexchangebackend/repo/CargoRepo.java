@@ -41,45 +41,50 @@ public interface CargoRepo extends JpaRepository<Cargo, Long> {
             "c.volume_from = CAST (:volumeFrom as varchar)) and (:volumeUpTo is null or c.volume_up_to = " +
             "CAST (:volumeUpTo as varchar)) and (:nameCargo is null or c.name = CAST (:nameCargo as varchar)) and " +
             "(:bodyType is null or c.body_type = CAST (:bodyType as varchar))", nativeQuery = true)*/
-    @Query(value = "SELECT * FROM cargo c WHERE (c.id in :ids) and (:weightFrom is null or " +
+    @Query(value = "SELECT * FROM cargo c WHERE (c.id in :ids) and (c.type_transportation in :transportation) and " +
+            "(:weightFrom is null or " +
             "c.weight_from = CAST (:weightFrom as varchar)) and (:weightUpTo is null or " +
             "c.weight_up_to = CAST (:weightUpTo as varchar)) and (:volumeFrom is null or " +
             "c.volume_from = CAST (:volumeFrom as varchar)) and (:volumeUpTo is null or c.volume_up_to = " +
             "CAST (:volumeUpTo as varchar)) and (:nameCargo is null or c.name = CAST (:nameCargo as varchar)) and " +
             "(:bodyType is null or c.body_type = CAST (:bodyType as varchar))", nativeQuery = true)
-    Page<Cargo> searchCargoWithParams(Iterable<Long> ids, String weightFrom, String weightUpTo, String volumeFrom,
+    Page<Cargo> searchCargoWithParams(Iterable<String> transportation, Iterable<Long> ids, String weightFrom,
+                                      String weightUpTo, String volumeFrom,
                                       String volumeUpTo, String nameCargo, String bodyType, Pageable pageable);
 
 
-    @Query(value = "SELECT * FROM cargo c WHERE (c.id in :ids) and (c.loading_date_from >= :loadingDateFrom) and " +
+    @Query(value = "SELECT * FROM cargo c WHERE (c.id in :ids) and (c.type_transportation in :transportation) " +
+            "and (c.loading_date_from >= :loadingDateFrom) and " +
             "(:weightFrom is null or c.weight_from = CAST (:weightFrom as varchar)) " +
             "and (:weightUpTo is null or c.weight_up_to = CAST (:weightUpTo as varchar)) and (:volumeFrom is null or " +
             "c.volume_from = CAST (:volumeFrom as varchar)) and (:volumeUpTo is null or c.volume_up_to = " +
             "CAST (:volumeUpTo as varchar)) and (:nameCargo is null or c.name = CAST (:nameCargo as varchar)) and " +
             "(:bodyType is null or c.body_type = CAST (:bodyType as varchar))", nativeQuery = true)
-    Page<Cargo> findByLoadingDateFrom(Iterable<Long> ids, LocalDate loadingDateFrom, String weightFrom,
-                                      String weightUpTo, String volumeFrom, String volumeUpTo, String nameCargo,
-                                      String bodyType, Pageable pageable);
+    Page<Cargo> findByLoadingDateFrom(Iterable<String> transportation, Iterable<Long> ids, LocalDate loadingDateFrom,
+                                      String weightFrom, String weightUpTo, String volumeFrom, String volumeUpTo,
+                                      String nameCargo, String bodyType, Pageable pageable);
 
-    @Query(value = "SELECT * FROM cargo c WHERE (c.id in :ids) and (c.loading_date_by = :loadingDateBy) and " +
+    @Query(value = "SELECT * FROM cargo c WHERE (c.id in :ids) and (c.type_transportation in :transportation) " +
+            "and (c.loading_date_by = :loadingDateBy) and " +
             "(:weightFrom is null or c.weight_from = CAST (:weightFrom as varchar)) " +
             "and (:weightUpTo is null or c.weight_up_to = CAST (:weightUpTo as varchar)) and (:volumeFrom is null or " +
             "c.volume_from = CAST (:volumeFrom as varchar)) and (:volumeUpTo is null or c.volume_up_to = " +
             "CAST (:volumeUpTo as varchar)) and (:nameCargo is null or c.name = CAST (:nameCargo as varchar)) and " +
             "(:bodyType is null or c.body_type = CAST (:bodyType as varchar))", nativeQuery = true)
-    Page<Cargo> findByLoadingDateBy(Iterable<Long> ids, LocalDate loadingDateBy, String weightFrom, String weightUpTo,
-                                    String volumeFrom, String volumeUpTo, String nameCargo, String bodyType,
-                                    Pageable pageable);
+    Page<Cargo> findByLoadingDateBy(Iterable<String> transportation, Iterable<Long> ids, LocalDate loadingDateBy,
+                                    String weightFrom, String weightUpTo, String volumeFrom, String volumeUpTo,
+                                    String nameCargo, String bodyType, Pageable pageable);
 
-    @Query(value = "SELECT * FROM cargo c WHERE (c.id in :ids) and " +
+    @Query(value = "SELECT * FROM cargo c WHERE (c.id in :ids) and (c.type_transportation in :transportation) " +
+            "and " +
             "(c.loading_date_from >= :loadingDateFrom) and (c.loading_date_by <= :loadingDateBy) and " +
             "(:weightFrom is null or c.weight_from = CAST (:weightFrom as varchar)) and " +
             "(:weightUpTo is null or c.weight_up_to = CAST (:weightUpTo as varchar)) and (:volumeFrom is null or " +
             "c.volume_from = CAST (:volumeFrom as varchar)) and (:volumeUpTo is null or c.volume_up_to = " +
             "CAST (:volumeUpTo as varchar)) and (:nameCargo is null or c.name = CAST (:nameCargo as varchar)) and " +
             "(:bodyType is null or c.body_type = CAST (:bodyType as varchar))", nativeQuery = true)
-    Page<Cargo> getAllBetweenTwoDate(Iterable<Long> ids, LocalDate loadingDateFrom, LocalDate loadingDateBy,
-                                     String weightFrom, String weightUpTo, String volumeFrom,
+    Page<Cargo> getAllBetweenTwoDate(Iterable<String> transportation, Iterable<Long> ids, LocalDate loadingDateFrom,
+                                     LocalDate loadingDateBy, String weightFrom, String weightUpTo, String volumeFrom,
                                      String volumeUpTo, String nameCargo, String bodyType, Pageable pageable);
 
 

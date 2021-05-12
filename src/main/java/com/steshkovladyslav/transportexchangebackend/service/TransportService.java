@@ -59,12 +59,11 @@ public class TransportService {
             Transport transport,
             List<PointLUTransport> placesTransport,
             PropertiesRequest propertiesTransport,
-            String lang,
             MultipartFile firstFile,
             MultipartFile secondFile,
             MultipartFile thirdFile) {
         try {
-            return saveTransport(token, transport, placesTransport, propertiesTransport, lang, firstFile,
+            return saveTransport(token, transport, placesTransport, propertiesTransport, firstFile,
                     secondFile, thirdFile);
         } catch (IOException e) {
             e.printStackTrace();
@@ -77,7 +76,6 @@ public class TransportService {
             Transport transport,
             List<PointLUTransport> placesTransport,
             PropertiesRequest propertiesTransport,
-            String lang,
             MultipartFile firstFile,
             MultipartFile secondFile,
             MultipartFile thirdFile) throws IOException {
@@ -94,7 +92,7 @@ public class TransportService {
             if (cargoTransportGeneral.setUserLegalUser(token, null, transport))
                 return null;
 
-            addPropertiesTransport(transport, propertiesTransport, lang);
+            addPropertiesTransport(transport, propertiesTransport);
             transportRepo.save(transport);
             addPlacesTransport(transport, placesTransport);
 
@@ -132,7 +130,7 @@ public class TransportService {
         transportRepo.save(transport);
     }
 
-    private void addPropertiesTransport(Transport transport, PropertiesRequest propertiesTransport, String lang) {
+    private void addPropertiesTransport(Transport transport, PropertiesRequest propertiesTransport) {
         if (propertiesTransport.getTypesLoadingTruck() != null) {
             for (String loading : propertiesTransport.getTypesLoadingTruck()) {
                 System.out.println(loading);

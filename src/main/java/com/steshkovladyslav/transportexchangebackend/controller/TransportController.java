@@ -46,12 +46,11 @@ public class TransportController {
             @RequestPart("transport") Transport transport,
             @RequestPart("placesTransport") List<PointLUTransport> placesTransport,
             @RequestPart("propertiesTransport") PropertiesRequest propertiesTransport,
-            @RequestParam("lang") String lang,
             @RequestPart(value = "firstPhoto", required = false) MultipartFile firstFile,
             @RequestPart(value = "secondPhoto", required = false) MultipartFile secondFile,
             @RequestPart(value = "thirdPhoto", required = false) MultipartFile thirdFile
     ) {
-        return transportService.addTransport(token, transport, placesTransport, propertiesTransport, lang,
+        return transportService.addTransport(token, transport, placesTransport, propertiesTransport,
                 firstFile, secondFile, thirdFile);
     }
 
