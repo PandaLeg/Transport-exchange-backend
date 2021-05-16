@@ -116,7 +116,6 @@ public class TransportController {
             @PathVariable("id") long id,
             @RequestParam("role") String role
     ){
-        System.out.println("GET SENT OFFERS");
         return transportService.getSentOffersTransports(id, role);
     }
 
@@ -126,5 +125,12 @@ public class TransportController {
             @RequestParam("id") Long id
     ){
         return transportService.changeStatusTransport(id);
+    }
+
+    @PostMapping(value = "/get-count-places", consumes = {"multipart/form-data"})
+    public Map<String, Object> getCountPlaces(
+            @RequestPart("countries") List<String> countries
+    ) {
+        return transportService.getCountPlaces(countries);
     }
 }

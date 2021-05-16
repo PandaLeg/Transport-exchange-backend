@@ -33,6 +33,9 @@ public class User implements Serializable {
     private String city;
     private String phone;
 
+    private String companyName;
+    private String companyCode;
+
     private String profilePicture;
     private String profileBackground;
 
@@ -96,7 +99,8 @@ public class User implements Serializable {
     }
 
     public User(String password, String email, String firstName, String lastName, String patronymic, String country,
-                String city, String phone, String profilePicture, String profileBackground) {
+                String city, String phone, String companyName, String companyCode, String profilePicture,
+                String profileBackground) {
         this.password = password;
         this.email = email;
         this.firstName = firstName;
@@ -105,6 +109,8 @@ public class User implements Serializable {
         this.country = country;
         this.city = city;
         this.phone = phone;
+        this.companyName = companyName;
+        this.companyCode = companyCode;
         this.profilePicture = profilePicture;
         this.profileBackground = profileBackground;
     }

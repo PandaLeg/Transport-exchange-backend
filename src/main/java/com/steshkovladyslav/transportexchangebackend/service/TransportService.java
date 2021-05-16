@@ -29,7 +29,6 @@ public class TransportService {
     CargoTransportGeneral cargoTransportGeneral;
 
     private final UserRepo userRepo;
-    private final LegalUserRepo legalUserRepo;
 
     private final TransportRepo transportRepo;
     private final PhotoTransportRepo photoTransportRepo;
@@ -38,11 +37,10 @@ public class TransportService {
     private final TransportOfferRepo transportOfferRepo;
 
     @Autowired
-    public TransportService(UserRepo userRepo, LegalUserRepo legalUserRepo, TransportRepo transportRepo,
-                            PhotoTransportRepo photoTransportRepo, PropertyRepo propertyRepo,
-                            PointLUTransRepo pointLUTransRepo, TransportOfferRepo transportOfferRepo) {
+    public TransportService(UserRepo userRepo, TransportRepo transportRepo, PhotoTransportRepo photoTransportRepo,
+                            PropertyRepo propertyRepo, PointLUTransRepo pointLUTransRepo,
+                            TransportOfferRepo transportOfferRepo) {
         this.userRepo = userRepo;
-        this.legalUserRepo = legalUserRepo;
         this.transportRepo = transportRepo;
         this.photoTransportRepo = photoTransportRepo;
         this.propertyRepo = propertyRepo;
@@ -89,7 +87,7 @@ public class TransportService {
         multipartFiles.add(thirdFile);
 
         if (transport != null) {
-            if (cargoTransportGeneral.setUserLegalUser(token, null, transport))
+            if (!cargoTransportGeneral.setUser(token, null, transport))
                 return null;
 
             addPropertiesTransport(transport, propertiesTransport);
@@ -405,14 +403,9 @@ public class TransportService {
         Transport transport = transportRepo.findById(id);
         List<PointLUTransport> pointsLUCargoById = pointLUTransRepo.getPointsLUTransportById(id);
 
-        if (transport.getUser() != null) {
-            User user = userRepo.findById((long) transport.getUser().getId());
-            transports.put("user", user);
-        } else {
-            LegalUser legalUser = legalUserRepo.findById((long) transport.getLegalUser().getId());
-            transports.put("user", legalUser);
-        }
+        User user = userRepo.findById((long) transport.getUser().getId());
 
+        transports.put("user", user);
         transports.put("transport", transport);
         transports.put("pointsLUTransport", pointsLUCargoById);
 
@@ -428,23 +421,8 @@ public class TransportService {
     }
 
     public Integer getCountTransport(long id, String role) {
-        if (role.equals("ROLE_USER")) {
-            List<Transport> transports = transportRepo.findAllByUser_Id(id);
-            for (Transport transport : transports) {
-                System.out.println(transport.getId());
-            }
-            return transports.size();
-        }
-
-        if (role.equals("ROLE_LEGAL_USER")) {
-            List<Transport> transports = transportRepo.findAllByLegalUser_Id(id);
-            for (Transport transport : transports) {
-                System.out.println(transport.getId());
-            }
-            return transports.size();
-        }
-
-        return 0;
+        List<Transport> transports = transportRepo.findAllByUser_Id(id);
+        return transports.size();
     }
 
     public ResponseEntity<?> addTransportOffer(long idTransport, TransportOffer transportOffer, String role,
@@ -455,17 +433,14 @@ public class TransportService {
             transport = transportRepo.findById(idTransport);
             transportOffer.setTransport(transport);
 
-            if (role.equals("ROLE_USER")) {
-                User user = userRepo.findById(idUser);
+            User user = userRepo.findById(idUser);
 
+            if (user != null) {
                 transportOffer.setUser(user);
+                transportOfferRepo.save(transportOffer);
             } else {
-                LegalUser legalUser = legalUserRepo.findById(idUser);
-
-                transportOffer.setLegalUser(legalUser);
+                return null;
             }
-
-            transportOfferRepo.save(transportOffer);
 
             return ResponseEntity.ok("OK");
         }
@@ -480,7 +455,7 @@ public class TransportService {
 
         Long idTransport = 0L;
 
-        if (role.equals("ROLE_USER")) {
+        if (id != 0L) {
             List<Transport> allByUser_id = transportRepo.findAllByUser_Id(id);
             allByIds = pointLUTransRepo.findAllByIds(allByUser_id.stream().map(Transport::getId)
                     .collect(Collectors.toList()));
@@ -494,24 +469,6 @@ public class TransportService {
             }
 
             transports.put("transports", allByUser_id);
-            transports.put("pointsLUTransports", filteredArray);
-            return transports;
-        }
-
-        if (role.equals("ROLE_LEGAL_USER")) {
-            List<Transport> allByLegalUser_id = transportRepo.findAllByLegalUser_Id(id);
-            allByIds = pointLUTransRepo.findAllByIds(allByLegalUser_id.stream().map(Transport::getId)
-                    .collect(Collectors.toList()));
-
-            // Убираем дубликаты
-            for (PointLUTransport point : allByIds) {
-                if (!idTransport.equals(point.getTransport().getId())) {
-                    filteredArray.add(point);
-                    idTransport = point.getTransport().getId();
-                }
-            }
-
-            transports.put("transports", allByLegalUser_id);
             transports.put("pointsLUTransports", filteredArray);
             return transports;
         }
@@ -537,7 +494,7 @@ public class TransportService {
         Long idTransport = 0L;
 
 
-        if (role.equals("ROLE_USER")) {
+        if (id != 0L) {
             transportOffers = transportOfferRepo.findAll();
             transportsFromOffers = transportRepo.getByTransportId();
 
@@ -578,48 +535,9 @@ public class TransportService {
                     filteredPointsTransportInProcessing, filteredPointsCompleteTransport, idTransport);
 
             return transports;
-        } else {
-            transportOffers = transportOfferRepo.findAll();
-            transportsFromOffers = transportRepo.getByTransportId();
-
-            for (TransportOffer transportOffer : transportOffers) {
-                // Заявка, которая была отправлена легал юзером
-                if (transportOffer.getLegalUser() != null) {
-                    if (transportOffer.getLegalUser().getId() == id) {
-                        if (transportOffer.getTransport().getStatus() != null &&
-                                !transportOffer.getTransport().getStatus().equals("Complete")) {
-                            transportsInProcessing.add(transportOffer.getTransport());
-                        } else if (transportOffer.getTransport().getStatus() != null &&
-                                transportOffer.getTransport().getStatus().equals("Complete")) {
-                            transportsComplete.add(transportOffer.getTransport());
-                        } else {
-                            transportsSend.add(transportOffer.getTransport());
-                        }
-                    }
-                }
-            }
-
-            for (Transport t : transportsFromOffers) {
-                // Заявка которую отправили легал юзеру
-                if (t.getLegalUser() != null) {
-                    if (t.getLegalUser().getId() == id) {
-                        if (t.getStatus() != null && !t.getStatus().equals("Complete")) {
-                            transportsInProcessing.add(t);
-                        } else if (t.getStatus() != null && t.getStatus().equals("Complete")) {
-                            transportsComplete.add(t);
-                        } else {
-                            transportsActive.add(t);
-                        }
-                    }
-                }
-            }
-
-            setPointsTransportsAndFilledMap(transports, transportsSend, transportsActive, transportsInProcessing,
-                    transportsComplete, filteredPointsDispatchedTransport, filteredPointsActiveTransport,
-                    filteredPointsTransportInProcessing, filteredPointsCompleteTransport, idTransport);
-
-            return transports;
         }
+
+        return null;
     }
 
     private void setPointsTransportsAndFilledMap(Map<String, Object> transports, List<Transport> transportsSend,
@@ -701,7 +619,7 @@ public class TransportService {
         List<TransportOffer> transportOffers;
         List<Transport> transportsSendFrom = new ArrayList<>();
 
-        if (role.equals("ROLE_USER")) {
+        if (id != 0L) {
             transportOffers = transportOfferRepo.findAll();
 
             // Находим все грузы из заявок, которые отправил юзер
@@ -709,22 +627,6 @@ public class TransportService {
                 // Заявка, которая была отправлена юзером
                 if (transportOffer.getUser() != null) {
                     if (transportOffer.getUser().getId() == id) {
-                        transportsSendFrom.add(transportOffer.getTransport());
-                    }
-                }
-            }
-
-            return transportsSendFrom;
-        }
-
-        if (role.equals("ROLE_LEGAL_USER")) {
-            transportOffers = transportOfferRepo.findAll();
-
-            // Находим все грузы из заявок, которые отправил легал юзер
-            for (TransportOffer transportOffer : transportOffers) {
-                // Заявка, которая была отправлена легал юзером
-                if (transportOffer.getLegalUser() != null) {
-                    if (transportOffer.getLegalUser().getId() == id) {
                         transportsSendFrom.add(transportOffer.getTransport());
                     }
                 }
@@ -752,5 +654,67 @@ public class TransportService {
         transportRepo.save(transport);
 
         return transport;
+    }
+
+    public Map<String, Object> getCountPlaces(List<String> countries) {
+        List<PointLUTransport> pointLUTransports;
+        Map<String, Object> pointsInside = new HashMap<>();
+        Map<String, Object> pointsFrom = new HashMap<>();
+        Map<String, Object> pointsTo = new HashMap<>();
+
+        Map<String, Object> resultMap = new HashMap<>();
+
+        int counterForInside = 0;
+        int counterFrom = 0;
+        int counterTo = 0;
+
+        for (String country : countries) {
+            pointLUTransports = pointLUTransRepo.getPointsByCountryFromOrCountryTo(country);
+
+            if (pointLUTransports.size() != 0) {
+                for (PointLUTransport pointLUTransport : pointLUTransports) {
+                    // Если обе страны равны друг другу, то итерируем заявку (внутренние)
+                    if (pointLUTransport.getCountryFrom().equals(pointLUTransport.getCountryTo())) {
+                        counterForInside++;
+
+                        if (pointsInside.get(pointLUTransport.getCountryFrom()) != null) {
+                            pointsInside.replace(pointLUTransport.getCountryFrom(), counterForInside);
+                        } else {
+                            pointsInside.put(pointLUTransport.getCountryFrom(), counterForInside);
+                        }
+
+                    } else {
+                        if (country.equals(pointLUTransport.getCountryFrom())) {
+                            counterFrom++;
+
+                            if (pointsFrom.get(pointLUTransport.getCountryFrom()) != null) {
+                                pointsFrom.replace(pointLUTransport.getCountryFrom(), counterFrom);
+                            } else if (pointLUTransport.getCountryFrom() != null) {
+                                pointsFrom.put(pointLUTransport.getCountryFrom(), counterFrom);
+                            }
+                        }
+
+                        if (country.equals(pointLUTransport.getCountryTo())) {
+                            counterTo++;
+
+                            if (pointsTo.get(pointLUTransport.getCountryTo()) != null) {
+                                pointsTo.replace(pointLUTransport.getCountryTo(), counterTo);
+                            } else if (pointLUTransport.getCountryTo() != null) {
+                                pointsTo.put(pointLUTransport.getCountryTo(), counterTo);
+                            }
+                        }
+                    }
+                }
+                counterForInside = 0;
+                counterFrom = 0;
+                counterTo = 0;
+            }
+        }
+
+        resultMap.put("pointsInside", pointsInside);
+        resultMap.put("pointsFrom", pointsFrom);
+        resultMap.put("pointsTo", pointsTo);
+
+        return resultMap;
     }
 }

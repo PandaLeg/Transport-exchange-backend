@@ -48,12 +48,11 @@ public class UserService {
 
         if (jwtUtils.validateJwtToken(jwtToken)) {
             User user = userRepo.findByEmail(email);
-            LegalUser legalUser = legalUserRepo.findByEmail(email);
 
             if (user != null) {
                 return (T) user;
             } else {
-                return (T) legalUser;
+                return null;
             }
         }
         return null;
@@ -61,12 +60,11 @@ public class UserService {
 
     public ResponseEntity<?> editPersonalData(PersonalData personalData, MultipartFile photo, String role)
             throws IOException {
-        List<String> roles;
         String uuidFile = UUID.randomUUID().toString();
 
-        if (role.equals("ROLE_USER")) {
-            User user = userRepo.findById((long) personalData.getId());
+        User user = userRepo.findById((long) personalData.getId());
 
+        if (user != null) {
             if (personalData.getFirstName() != null && !personalData.getFirstName().equals(user.getFirstName())) {
                 user.setFirstName(personalData.getFirstName());
             }
@@ -93,36 +91,8 @@ public class UserService {
 
             userRepo.save(user);
             return ResponseEntity.ok("OK");
-        } else {
-            LegalUser legalUser = legalUserRepo.findById((long) personalData.getId());
-
-            if (personalData.getFirstName() != null && !personalData.getFirstName().equals(legalUser.getFirstName())) {
-                legalUser.setFirstName(personalData.getFirstName());
-            }
-
-            if (personalData.getLastName() != null && !personalData.getLastName().equals(legalUser.getLastName())) {
-                legalUser.setLastName(personalData.getLastName());
-            }
-
-            if (personalData.getPatronymic() != null && !personalData.getPatronymic().equals(legalUser.getPatronymic())) {
-                legalUser.setPatronymic(personalData.getPatronymic());
-            }
-
-            if (personalData.getPhone() != null && !personalData.getPhone().equals(legalUser.getPhone())) {
-                legalUser.setPhone(personalData.getPhone());
-            }
-
-            if (personalData.getEmail() != null && !personalData.getEmail().equals(legalUser.getEmail())) {
-                legalUser.setEmail(personalData.getEmail());
-            }
-
-            if (photo != null && !photo.getOriginalFilename().isEmpty()) {
-                setPhotoLegalUser(photo, uuidFile, legalUser);
-            }
-
-            legalUserRepo.save(legalUser);
-            return ResponseEntity.ok("OK");
         }
+        return null;
     }
 
     private void setPhotoUser(MultipartFile photo, String uuidFile, User user) throws IOException {
@@ -151,54 +121,16 @@ public class UserService {
         user.setProfilePicture(picturePath + resultFileName);
     }
 
-    private void setPhotoLegalUser(MultipartFile photo, String uuidFile, LegalUser legalUser) throws IOException {
-        File uploadDir = new File(uploadPath);
-
-        if (!uploadDir.exists()) {
-            uploadDir.mkdir();
-        }
-
-        if (legalUser.getProfilePicture() != null) {
-            int i = legalUser.getProfilePicture().lastIndexOf('/');
-            String tempUrlPicture = legalUser.getProfilePicture().substring(i);
-
-            File file = new File(uploadPath + "/" + tempUrlPicture);
-
-            if (file.delete()) {
-                System.out.println("Успешно удален");
-            } else {
-                System.out.println("Ошибка, файл не был удалён");
-            }
-        }
-
-        String resultFileName = uuidFile + "." + photo.getOriginalFilename();
-        photo.transferTo(new File(uploadPath + "/" + resultFileName));
-
-        legalUser.setProfilePicture(picturePath + resultFileName);
-    }
-
     public ResponseEntity<?> editPassword(PersonalData personalData, String role) {
-        if (role.equals("ROLE_USER")) {
-            User user = userRepo.findById((long) personalData.getId());
+        User user = userRepo.findById((long) personalData.getId());
 
-            if (personalData.getPassword() != null && !personalData.getPassword().equals(user.getPassword())) {
-                user.setPassword(encoder.encode(personalData.getPassword()));
-            }
-
-            userRepo.save(user);
-
-            return ResponseEntity.ok("OK");
-        } else {
-            LegalUser legalUser = legalUserRepo.findById((long) personalData.getId());
-
-            if (personalData.getPassword() != null && !personalData.getPassword().equals(legalUser.getPassword())) {
-                legalUser.setPassword(encoder.encode(personalData.getPassword()));
-            }
-
-            legalUserRepo.save(legalUser);
-
-            return ResponseEntity.ok("OK");
+        if (personalData.getPassword() != null && !personalData.getPassword().equals(user.getPassword())) {
+            user.setPassword(encoder.encode(personalData.getPassword()));
         }
+
+        userRepo.save(user);
+
+        return ResponseEntity.ok("OK");
     }
 
     public ResponseEntity<?> editBackgroundProfile(MultipartFile photoBackground, String role, String jwt) throws IOException {
@@ -207,19 +139,12 @@ public class UserService {
 
         if (jwtUtils.validateJwtToken(jwt)) {
             if (photoBackground != null && !photoBackground.getOriginalFilename().isEmpty()) {
-                if (role.equals("ROLE_USER")) {
-                    User user = userRepo.findByEmail(email);
+                User user = userRepo.findByEmail(email);
 
-                    setBackgroundPhotoUser(photoBackground, uuidFile, user);
+                setBackgroundPhotoUser(photoBackground, uuidFile, user);
 
-                    userRepo.save(user);
-                } else {
-                    LegalUser legalUser = legalUserRepo.findByEmail(email);
+                userRepo.save(user);
 
-                    setBackgroundPhotoLegalUser(photoBackground, uuidFile, legalUser);
-
-                    legalUserRepo.save(legalUser);
-                }
                 return ResponseEntity.ok("OK");
             }
         }
@@ -252,32 +177,5 @@ public class UserService {
         photoBackground.transferTo(new File(uploadPath + "/" + resultFileName));
 
         user.setProfileBackground(picturePath + resultFileName);
-    }
-
-    private void setBackgroundPhotoLegalUser(MultipartFile photoBackground, String uuidFile, LegalUser legalUser)
-            throws IOException {
-        File uploadDir = new File(uploadPath);
-
-        if (!uploadDir.exists()) {
-            uploadDir.mkdir();
-        }
-
-        if (legalUser.getProfileBackground() != null) {
-            int i = legalUser.getProfileBackground().lastIndexOf('/');
-            String tempUrlPicture = legalUser.getProfileBackground().substring(i);
-
-            File file = new File(uploadPath + "/" + tempUrlPicture);
-
-            if (file.delete()) {
-                System.out.println("Успешно удален");
-            } else {
-                System.out.println("Ошибка, файл не был удалён");
-            }
-        }
-
-        String resultFileName = uuidFile + "." + photoBackground.getOriginalFilename();
-        photoBackground.transferTo(new File(uploadPath + "/" + resultFileName));
-
-        legalUser.setProfileBackground(picturePath + resultFileName);
     }
 }

@@ -32,15 +32,6 @@ public interface CargoRepo extends JpaRepository<Cargo, Long> {
             "CAST (:cityTo as varchar))", nativeQuery = true)
     Set<Long> getCargoIds(String countryFrom, String cityFrom, String countryTo, String cityTo);
 
-    /*@Query(value = "SELECT * FROM cargo c WHERE (:countryFrom is null or c.country_first_loading_point = " +
-            "CAST (:countryFrom as varchar)) and (:cityFrom is null or c.city_first_loading_point = " +
-            "CAST (:cityFrom as varchar)) and  (:countryTo is null or c.country_first_unloading_point = " +
-            "CAST (:countryTo as varchar)) and (:cityTo is null or c.city_first_unloading_point = " +
-            "CAST (:cityTo as varchar)) and (:weightFrom is null or c.weight_from = CAST (:weightFrom as varchar)) " +
-            "and (:weightUpTo is null or c.weight_up_to = CAST (:weightUpTo as varchar)) and (:volumeFrom is null or " +
-            "c.volume_from = CAST (:volumeFrom as varchar)) and (:volumeUpTo is null or c.volume_up_to = " +
-            "CAST (:volumeUpTo as varchar)) and (:nameCargo is null or c.name = CAST (:nameCargo as varchar)) and " +
-            "(:bodyType is null or c.body_type = CAST (:bodyType as varchar))", nativeQuery = true)*/
     @Query(value = "SELECT * FROM cargo c WHERE (c.id in :ids) and (c.type_transportation in :transportation) and " +
             "(:weightFrom is null or " +
             "c.weight_from = CAST (:weightFrom as varchar)) and (:weightUpTo is null or " +

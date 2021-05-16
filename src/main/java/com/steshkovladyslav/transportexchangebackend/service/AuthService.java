@@ -21,8 +21,4 @@ public class AuthService {
     public User addUser(User user) {
         return userRepo.save(user);
     }
-
-    public LegalUser addLegalUser(LegalUser user) {
-        return legalUserRepo.save(user);
-    }
 }

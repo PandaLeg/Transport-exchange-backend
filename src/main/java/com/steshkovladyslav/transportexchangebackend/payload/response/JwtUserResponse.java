@@ -17,6 +17,9 @@ public class JwtUserResponse {
     private String city;
     private String phone;
 
+    private String companyName;
+    private String companyCode;
+
     private List<String> roles;
 
     public JwtUserResponse(String token, Long id, String email, String firstName, String lastName,

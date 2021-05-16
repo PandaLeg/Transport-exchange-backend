@@ -29,7 +29,6 @@ public class CargoService {
     CargoTransportGeneral cargoTransportGeneral;
 
     private final UserRepo userRepo;
-    private final LegalUserRepo legalUserRepo;
 
     private final CargoRepo cargoRepo;
     private final PhotoCargoRepo photoCargoRepo;
@@ -38,11 +37,10 @@ public class CargoService {
     private final CargoOfferRepo cargoOfferRepo;
 
     @Autowired
-    public CargoService(UserRepo userRepo, LegalUserRepo legalUserRepo, CargoRepo cargoRepo,
-                        PhotoCargoRepo photoCargoRepo, PropertyRepo propertyRepo, PointLUCargoRepo pointLURepo,
+    public CargoService(UserRepo userRepo, CargoRepo cargoRepo, PhotoCargoRepo photoCargoRepo,
+                        PropertyRepo propertyRepo, PointLUCargoRepo pointLURepo,
                         CargoOfferRepo cargoOfferRepo) {
         this.userRepo = userRepo;
-        this.legalUserRepo = legalUserRepo;
         this.cargoRepo = cargoRepo;
         this.photoCargoRepo = photoCargoRepo;
         this.propertyRepo = propertyRepo;
@@ -94,7 +92,7 @@ public class CargoService {
         multipartFiles.add(thirdFile);
 
         if (cargo != null) {
-            if (cargoTransportGeneral.setUserLegalUser(token, cargo, null))
+            if (!cargoTransportGeneral.setUser(token, cargo, null))
                 return null;
             cargo.setTypeTransportation(typeTransportation);
 
@@ -204,13 +202,13 @@ public class CargoService {
                     transportation.equals("Автоперевезення")) {
                 typesTransportation.add("roadTransportation");
             }
-            if(transportation.equals("Морская перевозка") || transportation.equals("Sea transportation") ||
-                    transportation.equals("Морське перевезення")){
+            if (transportation.equals("Морская перевозка") || transportation.equals("Sea transportation") ||
+                    transportation.equals("Морське перевезення")) {
                 typesTransportation.add("seaTransportation");
             }
 
-            if(transportation.equals("Ж/Д перевозка") || transportation.equals("Railway transportation") ||
-                    transportation.equals("Залізничне перевезення")){
+            if (transportation.equals("Ж/Д перевозка") || transportation.equals("Railway transportation") ||
+                    transportation.equals("Залізничне перевезення")) {
                 typesTransportation.add("railwayTransportation");
             }
         }
@@ -434,14 +432,9 @@ public class CargoService {
         Cargo cargoFromDb = cargoRepo.findById(id);
         List<PointLUCargo> pointsLUCargoById = pointLURepo.getPointsLUCargoById(id);
 
-        if (cargoFromDb.getUser() != null) {
-            User user = userRepo.findById((long) cargoFromDb.getUser().getId());
-            cargo.put("user", user);
-        } else {
-            LegalUser legalUser = legalUserRepo.findById((long) cargoFromDb.getLegalUser().getId());
-            cargo.put("user", legalUser);
-        }
+        User user = userRepo.findById((long) cargoFromDb.getUser().getId());
 
+        cargo.put("user", user);
         cargo.put("cargo", cargoFromDb);
         cargo.put("pointsLUCargo", pointsLUCargoById);
 
@@ -458,18 +451,9 @@ public class CargoService {
 
     public Integer getCountCargo(long id, String role) {
         System.out.println(id);
-        System.out.println(role);
-        if (role.equals("ROLE_USER")) {
-            List<Cargo> cargo = cargoRepo.findAllByUser_Id(id);
-            return cargo.size();
-        }
 
-        if (role.equals("ROLE_LEGAL_USER")) {
-            List<Cargo> cargo = cargoRepo.findAllByLegalUser_Id(id);
-            return cargo.size();
-        }
-
-        return 0;
+        List<Cargo> cargo = cargoRepo.findAllByUser_Id(id);
+        return cargo.size();
     }
 
     public ResponseEntity<?> addCargoOffer(long idCargo, CargoOffer cargoOffer, String role, long idUser) {
@@ -479,17 +463,14 @@ public class CargoService {
             cargo = cargoRepo.findById(idCargo);
             cargoOffer.setCargo(cargo);
 
-            if (role.equals("ROLE_USER")) {
-                User user = userRepo.findById(idUser);
+            User user = userRepo.findById(idUser);
 
+            if (user != null) {
                 cargoOffer.setUser(user);
+                cargoOfferRepo.save(cargoOffer);
             } else {
-                LegalUser legalUser = legalUserRepo.findById(idUser);
-
-                cargoOffer.setLegalUser(legalUser);
+                return null;
             }
-
-            cargoOfferRepo.save(cargoOffer);
 
             return ResponseEntity.ok("OK");
         }
@@ -503,7 +484,7 @@ public class CargoService {
         List<PointLUCargo> allByIds;
         Long idCargo = 0L;
 
-        if (role.equals("ROLE_USER")) {
+        if (id != 0L) {
             List<Cargo> allByUser_id = cargoRepo.findAllByUser_Id(id);
             allByIds = pointLURepo.findAllByIds(allByUser_id.stream().map(Cargo::getId)
                     .collect(Collectors.toList()));
@@ -517,24 +498,6 @@ public class CargoService {
             }
 
             cargo.put("cargo", allByUser_id);
-            cargo.put("pointsLUCargo", filteredArray);
-            return cargo;
-        }
-
-        if (role.equals("ROLE_LEGAL_USER")) {
-            List<Cargo> allByLegalUser_id = cargoRepo.findAllByLegalUser_Id(id);
-            allByIds = pointLURepo.findAllByIds(allByLegalUser_id.stream().map(Cargo::getId)
-                    .collect(Collectors.toList()));
-
-            // Убираем дубликаты
-            for (PointLUCargo point : allByIds) {
-                if (!idCargo.equals(point.getCargo().getId())) {
-                    filteredArray.add(point);
-                    idCargo = point.getCargo().getId();
-                }
-            }
-
-            cargo.put("cargo", allByLegalUser_id);
             cargo.put("pointsLUCargo", filteredArray);
             return cargo;
         }
@@ -559,7 +522,7 @@ public class CargoService {
 
         Long idCargo = 0L;
 
-        if (role.equals("ROLE_USER")) {
+        if (id != 0L) {
             cargoOffers = cargoOfferRepo.findAll();
             allCargoFromOffers = cargoRepo.getByCargoId();
 
@@ -600,48 +563,9 @@ public class CargoService {
                     filteredPointsCompleteCargo, idCargo);
 
             return cargo;
-        } else {
-            cargoOffers = cargoOfferRepo.findAll();
-            allCargoFromOffers = cargoRepo.getByCargoId();
-
-            for (CargoOffer cargoOffer : cargoOffers) {
-                // Заявка, которая была отправлена легал юзером
-                if (cargoOffer.getLegalUser() != null) {
-                    if (cargoOffer.getLegalUser().getId() == id) {
-                        if (cargoOffer.getCargo().getStatus() != null &&
-                                !cargoOffer.getCargo().getStatus().equals("Complete")) {
-                            allCargoInProcessing.add(cargoOffer.getCargo());
-                        } else if (cargoOffer.getCargo().getStatus() != null &&
-                                cargoOffer.getCargo().getStatus().equals("Complete")) {
-                            allCargoComplete.add(cargoOffer.getCargo());
-                        } else {
-                            allCargoSend.add(cargoOffer.getCargo());
-                        }
-                    }
-                }
-            }
-
-            for (Cargo c : allCargoFromOffers) {
-                // Заявка которую отправили легал юзеру
-                if (c.getLegalUser() != null) {
-                    if (c.getLegalUser().getId() == id) {
-                        if (c.getStatus() != null && !c.getStatus().equals("Complete")) {
-                            allCargoInProcessing.add(c);
-                        } else if (c.getStatus() != null && c.getStatus().equals("Complete")) {
-                            allCargoComplete.add(c);
-                        } else {
-                            allCargoActive.add(c);
-                        }
-                    }
-                }
-            }
-
-            setPointsCargoAndFilledCargoMap(cargo, allCargoSend, allCargoActive, allCargoInProcessing, allCargoComplete,
-                    filteredPointsDispatchedCargo, filteredPointsActiveCargo, filteredPointsInProcessingCargo,
-                    filteredPointsCompleteCargo, idCargo);
-
-            return cargo;
         }
+
+        return null;
     }
 
     private void setPointsCargoAndFilledCargoMap(Map<String, Object> cargo, List<Cargo> allCargoSend,
@@ -676,9 +600,7 @@ public class CargoService {
             }
         }
 
-        if (idCargo != 0L) {
-            idCargo = 0L;
-        }
+        idCargo = 0L;
 
         for (PointLUCargo point : allPointsActiveCargo) {
             if (!idCargo.equals(point.getCargo().getId())) {
@@ -687,9 +609,8 @@ public class CargoService {
             }
         }
 
-        if (idCargo != 0L) {
-            idCargo = 0L;
-        }
+        idCargo = 0L;
+
 
         for (PointLUCargo point : allPointsCargoInProcessing) {
             if (!idCargo.equals(point.getCargo().getId())) {
@@ -698,9 +619,7 @@ public class CargoService {
             }
         }
 
-        if (idCargo != 0L) {
-            idCargo = 0L;
-        }
+        idCargo = 0L;
 
         for (PointLUCargo point : allPointsCargoComplete) {
             if (!idCargo.equals(point.getCargo().getId())) {
@@ -719,11 +638,11 @@ public class CargoService {
         cargo.put("pointsLUCompleteCargo", filteredPointsCompleteCargo);
     }
 
-    public List<Cargo> getSentOffersCargo(long id, String role) {
+    public List<Cargo> getSentOffersCargo(long id) {
         List<CargoOffer> cargoOffers;
         List<Cargo> allCargoSendFrom = new ArrayList<>();
 
-        if (role.equals("ROLE_USER")) {
+        if (id != 0L) {
             cargoOffers = cargoOfferRepo.findAll();
 
             // Находим все грузы из заявок, которые отправил юзер
@@ -731,22 +650,6 @@ public class CargoService {
                 // Заявка, которая была отправлена юзером
                 if (cargoOffer.getUser() != null) {
                     if (cargoOffer.getUser().getId() == id) {
-                        allCargoSendFrom.add(cargoOffer.getCargo());
-                    }
-                }
-            }
-
-            return allCargoSendFrom;
-        }
-
-        if (role.equals("ROLE_LEGAL_USER")) {
-            cargoOffers = cargoOfferRepo.findAll();
-
-            // Находим все грузы из заявок, которые отправил легал юзер
-            for (CargoOffer cargoOffer : cargoOffers) {
-                // Заявка, которая была отправлена легал юзером
-                if (cargoOffer.getLegalUser() != null) {
-                    if (cargoOffer.getLegalUser().getId() == id) {
                         allCargoSendFrom.add(cargoOffer.getCargo());
                     }
                 }
@@ -774,5 +677,69 @@ public class CargoService {
         cargoRepo.save(cargo);
 
         return cargo;
+    }
+
+    public Map<String, Object> getCountPlaces(List<String> countries) {
+        List<PointLUCargo> pointsLUCargo;
+        Map<String, Object> pointsInside = new HashMap<>();
+        Map<String, Object> pointsFrom = new HashMap<>();
+        Map<String, Object> pointsTo = new HashMap<>();
+
+        Map<String, Object> resultMap = new HashMap<>();
+
+        int counterForInside = 0;
+        int counterFrom = 0;
+        int counterTo = 0;
+
+        for (String country : countries) {
+            pointsLUCargo = pointLURepo.getPointsByCountryFromOrCountryTo(country);
+
+            if (pointsLUCargo.size() != 0) {
+                System.out.println(pointsLUCargo.size());
+
+                for (PointLUCargo pointLUCargo : pointsLUCargo) {
+                    // Если обе страны равны друг другу, то итерируем заявку (внутренние)
+                    if (pointLUCargo.getCountryFrom().equals(pointLUCargo.getCountryTo())) {
+                        counterForInside++;
+
+                        if (pointsInside.get(pointLUCargo.getCountryFrom()) != null) {
+                            pointsInside.replace(pointLUCargo.getCountryFrom(), counterForInside);
+                        } else {
+                            pointsInside.put(pointLUCargo.getCountryFrom(), counterForInside);
+                        }
+
+                    } else {
+                        if (country.equals(pointLUCargo.getCountryFrom())) {
+                            counterFrom++;
+
+                            if (pointsFrom.get(pointLUCargo.getCountryFrom()) != null) {
+                                pointsFrom.replace(pointLUCargo.getCountryFrom(), counterFrom);
+                            } else if (pointLUCargo.getCountryFrom() != null) {
+                                pointsFrom.put(pointLUCargo.getCountryFrom(), counterFrom);
+                            }
+                        }
+
+                        if (country.equals(pointLUCargo.getCountryTo())) {
+                            counterTo++;
+
+                            if (pointsTo.get(pointLUCargo.getCountryTo()) != null) {
+                                pointsTo.replace(pointLUCargo.getCountryTo(), counterTo);
+                            } else if (pointLUCargo.getCountryTo() != null) {
+                                pointsTo.put(pointLUCargo.getCountryTo(), counterTo);
+                            }
+                        }
+                    }
+                }
+                counterForInside = 0;
+                counterFrom = 0;
+                counterTo = 0;
+            }
+        }
+
+        resultMap.put("pointsInside", pointsInside);
+        resultMap.put("pointsFrom", pointsFrom);
+        resultMap.put("pointsTo", pointsTo);
+
+        return resultMap;
     }
 }

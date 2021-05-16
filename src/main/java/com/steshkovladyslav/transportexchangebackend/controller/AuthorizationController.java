@@ -63,11 +63,7 @@ public class AuthorizationController {
                 .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
 
-        if (userDetails.getCompanyName() != null && !userDetails.getCompanyName().equals("")) {
-            return ResponseEntity.ok(jwt);
-        } else {
-            return ResponseEntity.ok(jwt);
-        }
+        return ResponseEntity.ok(jwt);
     }
 
     @PostMapping("/sign-up-user")
@@ -85,21 +81,6 @@ public class AuthorizationController {
         user.setRoles(roles);
 
         return authService.addUser(user);
-    }
-
-    @PostMapping("/sign-up-legal-user")
-    public LegalUser addLegalUser(@RequestBody LegalUser user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        Set<Role> roles = new HashSet<>();
-
-        Role adminRole = roleRepo.findByName(ERole.ROLE_ADMIN);
-        Role userRole = roleRepo.findByName(ERole.ROLE_LEGAL_USER);
-        roles.add(userRole);
-
-        user.setRoles(roles);
-
-        return authService.addLegalUser(user);
     }
 
     @PostMapping("/validate-user")

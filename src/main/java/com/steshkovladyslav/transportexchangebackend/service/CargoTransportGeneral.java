@@ -20,16 +20,14 @@ public class CargoTransportGeneral {
         this.legalUserRepo = legalUserRepo;
     }
 
-    boolean setUserLegalUser(String token, Cargo cargo, Transport transport) {
+    boolean setUser(String token, Cargo cargo, Transport transport) {
         User user = null;
-        LegalUser legalUser = null;
 
         if (jwtUtils.validateJwtToken(token)) {
             String email = jwtUtils.getUserNameFromJwtToken(token);
 
             if (email != null) {
                 user = userRepo.findByEmail(email);
-                legalUser = legalUserRepo.findByEmail(email);
             }
 
             if (user != null) {
@@ -38,18 +36,12 @@ public class CargoTransportGeneral {
                 } else {
                     transport.setUser(user);
                 }
-            } else if (legalUser != null) {
-                if (cargo != null) {
-                    cargo.setLegalUser(legalUser);
-                } else {
-                    transport.setLegalUser(legalUser);
-                }
-            } else {
                 return true;
+            } else {
+                return false;
             }
-            return false;
         }
-        return true;
+        return false;
     }
 }
 

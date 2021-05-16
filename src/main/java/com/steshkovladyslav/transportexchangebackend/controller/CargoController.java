@@ -16,7 +16,7 @@ import java.util.Map;
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/cargo")
-public class CargoController{
+public class CargoController {
     private final CargoService cargoService;
 
     @Autowired
@@ -112,32 +112,23 @@ public class CargoController{
 
     @GetMapping("/get-sent-offers-cargo/{id}")
     public List<Cargo> getSentOffersCargo(
-            @PathVariable("id") long id,
-            @RequestParam("role") String role
-    ){
-        return cargoService.getSentOffersCargo(id, role);
+            @PathVariable("id") long id
+    ) {
+        return cargoService.getSentOffersCargo(id);
     }
 
     @PutMapping("/change-status-cargo-offer")
     @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
     public Cargo changeStatusAndAddToProcessing(
             @RequestParam("id") Long id
-    ){
+    ) {
         return cargoService.changeStatusCargo(id);
     }
 
-    /*@PostMapping(value = "/add-sea-cargo", consumes = {"multipart/form-data"})
-    @PreAuthorize("hasRole('USER') or hasRole('LEGAL_USER') or hasRole('ADMIN')")
-    public SeaCargo addSeaCargo(
-            @RequestParam String token,
-            @RequestPart("seaCargo") SeaCargo seaCargo,
-            @RequestPart("placesCargo") List<PointLUCargo> placesCargo,
-            @RequestPart("propertiesCargo") PropertiesRequest propertiesCargo,
-            @RequestPart(value = "firstPhoto", required = false) MultipartFile firstFile,
-            @RequestPart(value = "secondPhoto", required = false) MultipartFile secondFile,
-            @RequestPart(value = "thirdPhoto", required = false) MultipartFile thirdFile
+    @PostMapping(value = "/get-count-places", consumes = {"multipart/form-data"})
+    public Map<String, Object> getCountPlaces(
+            @RequestPart("countries") List<String> countries
     ) {
-        return seaCargoService.addSeaCargo(token, seaCargo, propertiesCargo, placesCargo, firstFile, secondFile,
-                thirdFile);
-    }*/
+        return cargoService.getCountPlaces(countries);
+    }
 }

@@ -24,29 +24,24 @@ public class ChatController {
     public ChatMessage addMessage(
             @RequestBody ChatMessage chatMessage,
             @RequestParam long idUser,
-            @RequestParam long idUserCompanion,
-            @RequestParam String role,
-            @RequestParam String roleUserFromCargo
+            @RequestParam long idUserCompanion
     ) {
-        return chatService.addMessage(chatMessage, role, roleUserFromCargo, idUser, idUserCompanion);
+        return chatService.addMessage(chatMessage, idUser, idUserCompanion);
     }
 
     @GetMapping("/get-users-of-chats/{id}")
     public Map<String, Object> getUsersOfChats(
-            @PathVariable long id,
-            @RequestParam String role
+            @PathVariable long id
     ) {
-        return chatService.getUsersOfChats(id, role);
+        return chatService.getUsersOfChats(id);
     }
 
     @GetMapping("/get-messages/{id}")
     public Map<String, Object> getMessages(
             @PathVariable("id") long idUser,
             @RequestParam long idUserCompanion,
-            @RequestParam long idChat,
-            @RequestParam String role,
-            @RequestParam String roleUserCompanion
+            @RequestParam long idChat
     ) {
-        return chatService.getMessages(idUser, idUserCompanion, role, roleUserCompanion, idChat);
+        return chatService.getMessages(idUser, idUserCompanion, idChat);
     }
 }
