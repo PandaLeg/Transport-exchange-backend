@@ -19,6 +19,8 @@ public class UserDetailsImpl implements UserDetails {
     private String lastName;
     private String patronymic;
 
+    private String fullName;
+
     private String email;
 
     private String country;
@@ -33,13 +35,14 @@ public class UserDetailsImpl implements UserDetails {
 
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailsImpl(Long id, String firstName, String lastName, String patronymic, String email, String country,
-                           String city, String phone, String companyName, String companyCode, String password,
-                           Collection<? extends GrantedAuthority> authorities) {
+    public UserDetailsImpl(Long id, String firstName, String lastName, String patronymic, String fullName, String email,
+                           String country, String city, String phone, String companyName, String companyCode,
+                           String password, Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.patronymic = patronymic;
+        this.fullName = fullName;
         this.email = email;
         this.country = country;
         this.city = city;
@@ -60,6 +63,7 @@ public class UserDetailsImpl implements UserDetails {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getPatronymic(),
+                user.getFullName(),
                 user.getEmail(),
                 user.getCountry(),
                 user.getCity(),
@@ -100,6 +104,10 @@ public class UserDetailsImpl implements UserDetails {
 
     public String getPatronymic() {
         return patronymic;
+    }
+
+    public String getFullName() {
+        return fullName;
     }
 
     public String getEmail() {

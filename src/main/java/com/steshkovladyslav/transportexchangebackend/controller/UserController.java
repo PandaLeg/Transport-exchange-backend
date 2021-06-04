@@ -1,6 +1,7 @@
 package com.steshkovladyslav.transportexchangebackend.controller;
 
 
+import com.steshkovladyslav.transportexchangebackend.model.Confirmation;
 import com.steshkovladyslav.transportexchangebackend.payload.request.users.PersonalData;
 import com.steshkovladyslav.transportexchangebackend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -23,7 +26,7 @@ public class UserController {
     }
 
     @GetMapping("/get-user")
-    public <T> T getUser(
+    public Map<String, Object> getUser(
             @RequestParam("jwtToken") String jwtToken
     ) {
         return userService.getUser(jwtToken);
@@ -62,5 +65,14 @@ public class UserController {
             @RequestParam("role") String role
     ) {
         return userService.editPassword(personalData, role);
+    }
+
+    @PostMapping("/send-confirmation/{id}")
+    @PreAuthorize("hasRole('LEGAL_USER') or hasRole('ADMIN')")
+    public ResponseEntity<?> sendConfirmation(
+            @PathVariable("id") long id,
+            @RequestBody Confirmation confirmation
+    ) {
+        return userService.sendConfirmation(id, confirmation);
     }
 }

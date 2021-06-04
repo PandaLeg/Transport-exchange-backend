@@ -1,5 +1,6 @@
 package com.steshkovladyslav.transportexchangebackend.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
@@ -9,6 +10,7 @@ import lombok.ToString;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,7 +18,7 @@ import java.util.Set;
 @Table(name = "users")
 @Data
 @EqualsAndHashCode(of = {"id"})
-@ToString(of = {"id", "email", "firstName", "lastName", "patronymic", "country", "phone"})
+@ToString(of = {"id", "email", "firstName", "lastName", "patronymic", "fullName", "country", "phone"})
 public class User implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -29,6 +31,8 @@ public class User implements Serializable {
     private String lastName;
     private String patronymic;
 
+    private String fullName;
+
     private String country;
     private String city;
     private String phone;
@@ -38,6 +42,11 @@ public class User implements Serializable {
 
     private String profilePicture;
     private String profileBackground;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime lastVisit;
+
+    private String status;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -95,17 +104,26 @@ public class User implements Serializable {
     )
     private Set<Chat> chats = new HashSet<>();
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIdentityReference
+    @JsonIdentityInfo(
+            property = "id",
+            generator = ObjectIdGenerators.PropertyGenerator.class
+    )
+    private Confirmation confirmation;
+
     public User() {
     }
 
-    public User(String password, String email, String firstName, String lastName, String patronymic, String country,
-                String city, String phone, String companyName, String companyCode, String profilePicture,
-                String profileBackground) {
+    public User(String password, String email, String firstName, String lastName, String patronymic, String fullName,
+                String country, String city, String phone, String companyName, String companyCode,
+                String profilePicture, String profileBackground) {
         this.password = password;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
         this.patronymic = patronymic;
+        this.fullName = fullName;
         this.country = country;
         this.city = city;
         this.phone = phone;

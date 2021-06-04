@@ -11,6 +11,7 @@ import lombok.ToString;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -68,6 +69,9 @@ public class Cargo implements Serializable {
 
     private String status;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime dateAdded;
+
     @ManyToOne
     @JsonIdentityReference
     @JsonIdentityInfo(
@@ -104,19 +108,27 @@ public class Cargo implements Serializable {
 
     @ManyToMany
     @JoinTable(
+            name = "cargo_types",
+            joinColumns = @JoinColumn(name = "cargo_id"),
+            inverseJoinColumns = @JoinColumn(name = "type_id")
+    )
+    private Set<Type> typesCargo = new HashSet<>();
+    
+    @ManyToMany
+    @JoinTable(
             name = "cargo_properties",
             joinColumns = @JoinColumn(name = "cargo_id"),
             inverseJoinColumns = @JoinColumn(name = "property_id")
     )
     private Set<Property> propertiesCargo = new HashSet<>();
 
-    @OneToOne(mappedBy = "cargo", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "cargo", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIdentityReference
     @JsonIdentityInfo(
             property = "id",
             generator = ObjectIdGenerators.PropertyGenerator.class
     )
-    private CargoOffer cargoOffer;
+    private Set<CargoOffer> cargoOffer = new HashSet<>();
 
     public Cargo() {
     }
@@ -148,4 +160,5 @@ public class Cargo implements Serializable {
         this.additional = additional;
         this.status = status;
     }
+
 }

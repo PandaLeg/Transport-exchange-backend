@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,7 +27,7 @@ public class CargoService {
     private String picturePath;
 
     @Autowired
-    CargoTransportGeneral cargoTransportGeneral;
+    GeneralComponent generalComponent;
 
     private final UserRepo userRepo;
 
@@ -84,6 +85,7 @@ public class CargoService {
     ) throws IOException {
         String uuidFile = UUID.randomUUID().toString();
         String resultFileName = "";
+        PointLUCargo pointLUCargo1 = placesCargo.get(0);
 
         List<MultipartFile> multipartFiles = new ArrayList<>();
 
@@ -92,13 +94,19 @@ public class CargoService {
         multipartFiles.add(thirdFile);
 
         if (cargo != null) {
-            if (!cargoTransportGeneral.setUser(token, cargo, null))
+            if (!generalComponent.setUser(token, cargo, null))
                 return null;
-            cargo.setTypeTransportation(typeTransportation);
 
-            addPropertiesCargo(cargo, propertiesCargo);
+            if (pointLUCargo1 == null) {
+                return null;
+            }
+            cargo.setTypeTransportation(typeTransportation);
+            cargo.setDateAdded(LocalDateTime.now());
+
+            generalComponent.updatePropertiesCargo(cargo, propertiesCargo);
             cargoRepo.save(cargo);
-            addPlacesCargo(cargo, placesCargo);
+            generalComponent.updatePlacesCargo(cargo, placesCargo);
+            cargoRepo.save(cargo);
 
             if (firstFile != null || secondFile != null || thirdFile != null) {
                 File uploadDir = new File(uploadPath);
@@ -119,68 +127,6 @@ public class CargoService {
             return cargo;
         }
         return null;
-    }
-
-    private void addPlacesCargo(Cargo cargo, List<PointLUCargo> placesCargo) {
-        for (PointLUCargo pointLUCargo : placesCargo) {
-            if (pointLUCargo.getCityFrom() != null && pointLUCargo.getCountryFrom() != null ||
-                    pointLUCargo.getCityTo() != null && pointLUCargo.getCountryTo() != null) {
-                pointLUCargo.setCargo(cargo);
-                pointLURepo.save(pointLUCargo);
-            }
-        }
-        cargoRepo.save(cargo);
-    }
-
-    private void addPropertiesCargo(Cargo cargo, PropertiesRequest propertiesCargo) {
-        if (propertiesCargo.getTypesLoadingTruck() != null) {
-            for (String loading : propertiesCargo.getTypesLoadingTruck()) {
-                Property property = propertyRepo.findByNameAndProperty(loading, "loading");
-                cargo.getPropertiesCargo().add(property);
-            }
-        }
-
-        if (propertiesCargo.getTypesUnloadingTruck() != null) {
-            for (String unloading : propertiesCargo.getTypesUnloadingTruck()) {
-                Property property = propertyRepo.findByNameAndProperty(unloading, "unloading");
-                cargo.getPropertiesCargo().add(property);
-            }
-        }
-
-        if (propertiesCargo.getContainerLoading() != null) {
-            for (String containerLoading : propertiesCargo.getContainerLoading()) {
-                Property property = propertyRepo.findByNameAndProperty(containerLoading, "containerLoading");
-                cargo.getPropertiesCargo().add(property);
-            }
-        }
-
-        if (propertiesCargo.getPermissions() != null) {
-            System.out.println(propertiesCargo.getPermissions());
-            for (String permission : propertiesCargo.getPermissions()) {
-                Property property = propertyRepo.findByName(permission);
-                cargo.getPropertiesCargo().add(property);
-            }
-        }
-
-        if (propertiesCargo.getTypePayment() != null && !propertiesCargo.getTypePayment().equals("")) {
-            Property property = propertyRepo.findByName(propertiesCargo.getTypePayment());
-            cargo.getPropertiesCargo().add(property);
-        }
-
-        if (propertiesCargo.getCostPer() != null && !propertiesCargo.getCostPer().equals("")) {
-            Property property = propertyRepo.findByName(propertiesCargo.getCostPer());
-            cargo.getPropertiesCargo().add(property);
-        }
-
-        if (propertiesCargo.getPaymentForm() != null && !propertiesCargo.getPaymentForm().equals("")) {
-            Property property = propertyRepo.findByName(propertiesCargo.getPaymentForm());
-            cargo.getPropertiesCargo().add(property);
-        }
-
-        if (propertiesCargo.getPaymentTime() != null && !propertiesCargo.getPaymentTime().equals("")) {
-            Property property = propertyRepo.findByName(propertiesCargo.getPaymentTime());
-            cargo.getPropertiesCargo().add(property);
-        }
     }
 
     public Map<String, Object> searchCargo(CargoRequest cargoRequest, int page, int pageSize) {
@@ -224,14 +170,12 @@ public class CargoService {
 
             cargo = pageCargo.getContent();
 
-            // Возврат всех мест загрузки и разгрузки груза
             resultId = getIdCargoPlaces(cargo);
         } else {
             pageCargo = getCargoByDate(cargoRequest, tempCargoId, typesTransportation, pageable);
 
             cargo = pageCargo.getContent();
 
-            // Возврат всех мест загрузки и разгрузки груза
             resultId = getIdCargoPlaces(cargo);
 
             if (cargo.isEmpty()) {
@@ -610,7 +554,6 @@ public class CargoService {
         }
 
         idCargo = 0L;
-
 
         for (PointLUCargo point : allPointsCargoInProcessing) {
             if (!idCargo.equals(point.getCargo().getId())) {

@@ -1,6 +1,9 @@
 package com.steshkovladyslav.transportexchangebackend.controller;
 
-import com.steshkovladyslav.transportexchangebackend.model.*;
+import com.steshkovladyslav.transportexchangebackend.model.Cargo;
+import com.steshkovladyslav.transportexchangebackend.model.CargoOffer;
+import com.steshkovladyslav.transportexchangebackend.model.PhotoCargo;
+import com.steshkovladyslav.transportexchangebackend.model.PointLUCargo;
 import com.steshkovladyslav.transportexchangebackend.payload.request.PropertiesRequest;
 import com.steshkovladyslav.transportexchangebackend.payload.request.cargo.CargoRequest;
 import com.steshkovladyslav.transportexchangebackend.service.CargoService;

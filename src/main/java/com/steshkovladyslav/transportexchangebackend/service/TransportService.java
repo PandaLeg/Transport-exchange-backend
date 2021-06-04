@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,7 +27,7 @@ public class TransportService {
     private String picturePath;
 
     @Autowired
-    CargoTransportGeneral cargoTransportGeneral;
+    GeneralComponent generalComponent;
 
     private final UserRepo userRepo;
 
@@ -87,12 +88,14 @@ public class TransportService {
         multipartFiles.add(thirdFile);
 
         if (transport != null) {
-            if (!cargoTransportGeneral.setUser(token, null, transport))
+            if (!generalComponent.setUser(token, null, transport))
                 return null;
+            transport.setDateAdded(LocalDateTime.now());
 
-            addPropertiesTransport(transport, propertiesTransport);
+            generalComponent.updatePropertiesTransport(transport, propertiesTransport);
             transportRepo.save(transport);
-            addPlacesTransport(transport, placesTransport);
+            generalComponent.updatePlacesTransport(transport, placesTransport);
+            transportRepo.save(transport);
 
             if (firstFile != null || secondFile != null || thirdFile != null) {
                 File uploadDir = new File(uploadPath);
@@ -117,63 +120,6 @@ public class TransportService {
         return null;
     }
 
-    private void addPlacesTransport(Transport transport, List<PointLUTransport> placesTransport) {
-        for (PointLUTransport pointLUTransport : placesTransport) {
-            if (pointLUTransport.getCityFrom() != null && pointLUTransport.getCountryFrom() != null ||
-                    pointLUTransport.getCityTo() != null && pointLUTransport.getCountryTo() != null) {
-                pointLUTransport.setTransport(transport);
-                pointLUTransRepo.save(pointLUTransport);
-            }
-        }
-        transportRepo.save(transport);
-    }
-
-    private void addPropertiesTransport(Transport transport, PropertiesRequest propertiesTransport) {
-        if (propertiesTransport.getTypesLoadingTruck() != null) {
-            for (String loading : propertiesTransport.getTypesLoadingTruck()) {
-                System.out.println(loading);
-                Property byRuName = propertyRepo.findByNameAndProperty(loading, "loading");
-                transport.getPropertiesTransport().add(byRuName);
-            }
-        }
-
-        if (propertiesTransport.getTypesUnloadingTruck() != null) {
-            for (String unloading : propertiesTransport.getTypesUnloadingTruck()) {
-                System.out.println(unloading);
-                Property byRuName = propertyRepo.findByNameAndProperty(unloading, "unloading");
-                transport.getPropertiesTransport().add(byRuName);
-            }
-        }
-
-        if (propertiesTransport.getPermissions() != null) {
-            for (String permission : propertiesTransport.getPermissions()) {
-                Property byRuName = propertyRepo.findByName(permission);
-                transport.getPropertiesTransport().add(byRuName);
-            }
-        }
-
-        if (propertiesTransport.getTypePayment() != null && !propertiesTransport.getTypePayment().equals("")) {
-            Property byRuName = propertyRepo.findByName(propertiesTransport.getTypePayment());
-            transport.getPropertiesTransport().add(byRuName);
-        }
-
-        if (propertiesTransport.getCostPer() != null && !propertiesTransport.getCostPer().equals("")) {
-            Property byRuName = propertyRepo.findByName(propertiesTransport.getCostPer());
-            transport.getPropertiesTransport().add(byRuName);
-        }
-
-        if (propertiesTransport.getPaymentForm() != null && !propertiesTransport.getPaymentForm().equals("")) {
-            Property byRuName = propertyRepo.findByName(propertiesTransport.getPaymentForm());
-            transport.getPropertiesTransport().add(byRuName);
-        }
-
-        if (propertiesTransport.getPaymentTime() != null && !propertiesTransport.getPaymentTime().equals("")) {
-            Property byRuName = propertyRepo.findByName(propertiesTransport.getPaymentTime());
-            transport.getPropertiesTransport().add(byRuName);
-        }
-
-    }
-
     public Map<String, Object> searchTransport(TransportRequest transportRequest, int page, int pageSize) {
         List<Transport> transports;
         Set<Long> tempCargoId;
@@ -186,7 +132,6 @@ public class TransportService {
 
         replacePlusOnSpace(transportRequest);
 
-        // Находим совпадение по странам и городам
         tempCargoId = transportRepo.getTransportIds(transportRequest.getCountryFrom(), transportRequest.getCityFrom(),
                 transportRequest.getCountryTo(), transportRequest.getCityTo());
 
@@ -198,14 +143,12 @@ public class TransportService {
 
             transports = transportPage.getContent();
 
-            // Возврат всех мест загрузки и разгрузки груза
             resultId = getIdTransportsPlaces(transports);
         } else {
             transportPage = getTransportsByDate(transportRequest, tempCargoId, pageable);
 
             transports = transportPage.getContent();
 
-            // Возврат всех мест загрузки и разгрузки груза
             resultId = getIdTransportsPlaces(transports);
 
             if (transports.isEmpty()) {
@@ -269,7 +212,6 @@ public class TransportService {
         List<Transport> paymentFormList = new ArrayList<>();
         List<Transport> paymentTimeList = new ArrayList<>();
 
-        // Если заполнена только форма оплаты
         if (transportRequest.getPaymentForm() != null && transportRequest.getPaymentTime() == null) {
             for (Transport item : transports) {
                 Property property = getProperty(item, "paymentForm");
@@ -286,7 +228,6 @@ public class TransportService {
             if (paymentFormList.isEmpty()) {
                 transports = null;
             }
-            // Если заполнено только поле момента оплаты
         } else if (transportRequest.getPaymentTime() != null && transportRequest.getPaymentForm() == null) {
             for (Transport item : transports) {
                 Property property = getProperty(item, "paymentTime");
@@ -303,9 +244,7 @@ public class TransportService {
             if (paymentTimeList.isEmpty()) {
                 transports = null;
             }
-            // Если заполнены оба поля
         } else {
-            System.out.println("ДАТА ЗАПОЛНЕНА");
             for (Transport item : transports) {
                 Property property = getProperty(item, "paymentForm");
 

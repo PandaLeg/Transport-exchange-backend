@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface CargoRepo extends JpaRepository<Cargo, Long> {
-    @EntityGraph(attributePaths = {"photoCargo", "propertiesCargo", "pointsCargo"})
+    @EntityGraph(attributePaths = {"user", "photoCargo", "propertiesCargo", "pointsCargo"})
     List<Cargo> findAll();
 
     @EntityGraph(attributePaths = {"user", "legalUser", "photoCargo", "propertiesCargo", "pointsCargo"})

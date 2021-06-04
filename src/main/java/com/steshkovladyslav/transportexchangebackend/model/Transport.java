@@ -11,6 +11,7 @@ import lombok.ToString;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -56,6 +57,9 @@ public class Transport implements Serializable {
 
     private String status;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime dateAdded;
+
     @ManyToOne
     @JsonIdentityReference
     @JsonIdentityInfo(
@@ -92,19 +96,27 @@ public class Transport implements Serializable {
 
     @ManyToMany
     @JoinTable(
+            name = "transport_types",
+            joinColumns = @JoinColumn(name = "transport_id"),
+            inverseJoinColumns = @JoinColumn(name = "type_id")
+    )
+    private Set<Type> typesTransport = new HashSet<>();
+    
+    @ManyToMany
+    @JoinTable(
             name = "transport_properties",
             joinColumns = @JoinColumn(name = "transport_id"),
             inverseJoinColumns = @JoinColumn(name = "property_id")
     )
     private Set<Property> propertiesTransport = new HashSet<>();
 
-    @OneToOne(mappedBy = "transport", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "transport", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIdentityReference
     @JsonIdentityInfo(
             property = "id",
             generator = ObjectIdGenerators.PropertyGenerator.class
     )
-    private TransportOffer transportOffer;
+    private Set<TransportOffer> transportOffer = new HashSet<>();
 
     public Transport() {
     }

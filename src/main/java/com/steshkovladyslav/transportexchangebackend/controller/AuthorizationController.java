@@ -1,11 +1,7 @@
 package com.steshkovladyslav.transportexchangebackend.controller;
 
-import com.steshkovladyslav.transportexchangebackend.model.ERole;
-import com.steshkovladyslav.transportexchangebackend.model.LegalUser;
-import com.steshkovladyslav.transportexchangebackend.model.Role;
 import com.steshkovladyslav.transportexchangebackend.model.User;
 import com.steshkovladyslav.transportexchangebackend.payload.request.LoginRequest;
-import com.steshkovladyslav.transportexchangebackend.repo.RoleRepo;
 import com.steshkovladyslav.transportexchangebackend.security.jwt.JwtUtils;
 import com.steshkovladyslav.transportexchangebackend.service.AuthService;
 import com.steshkovladyslav.transportexchangebackend.service.UserDetailsImpl;
@@ -18,12 +14,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -32,20 +25,16 @@ import java.util.stream.Collectors;
 public class AuthorizationController {
     private final AuthService authService;
     private final JwtUtils jwtUtils;
-    private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final RoleRepo roleRepo;
 
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
     @Autowired
-    public AuthorizationController(AuthService authService, JwtUtils jwtUtils, PasswordEncoder passwordEncoder,
-                                   AuthenticationManager authenticationManager, RoleRepo roleRepo) {
+    public AuthorizationController(AuthService authService, JwtUtils jwtUtils,
+                                   AuthenticationManager authenticationManager) {
         this.authService = authService;
         this.jwtUtils = jwtUtils;
-        this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
-        this.roleRepo = roleRepo;
     }
 
     @PostMapping("/sign-in-user")
@@ -67,20 +56,11 @@ public class AuthorizationController {
     }
 
     @PostMapping("/sign-up-user")
-    public User addUser(@RequestBody User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        Set<Role> roles = new HashSet<>();
-
-        Role userRole = roleRepo.findByName(ERole.ROLE_USER);
-        Role adminRole = roleRepo.findByName(ERole.ROLE_ADMIN);
-
-        roles.add(userRole);
-        roles.add(adminRole);
-
-        user.setRoles(roles);
-
-        return authService.addUser(user);
+    public User addUser(
+            @RequestBody User user,
+            @RequestParam("type") String type
+    ) {
+        return authService.addUser(user, type);
     }
 
     @PostMapping("/validate-user")

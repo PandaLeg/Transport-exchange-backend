@@ -22,7 +22,7 @@ public class CargoOffer implements Serializable {
 
     private String additional;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.ALL)
     @JsonIdentityReference
     @JsonIdentityInfo(
             property = "id",

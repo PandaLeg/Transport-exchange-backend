@@ -1,16 +1,14 @@
 package com.steshkovladyslav.transportexchangebackend.service;
 
-import com.steshkovladyslav.transportexchangebackend.model.LegalUser;
+import com.steshkovladyslav.transportexchangebackend.model.Confirmation;
 import com.steshkovladyslav.transportexchangebackend.model.User;
 import com.steshkovladyslav.transportexchangebackend.payload.request.users.PersonalData;
-import com.steshkovladyslav.transportexchangebackend.payload.response.JwtLegalUserResponse;
-import com.steshkovladyslav.transportexchangebackend.payload.response.JwtUserResponse;
+import com.steshkovladyslav.transportexchangebackend.repo.ConfirmationRepo;
 import com.steshkovladyslav.transportexchangebackend.repo.LegalUserRepo;
 import com.steshkovladyslav.transportexchangebackend.repo.UserRepo;
 import com.steshkovladyslav.transportexchangebackend.security.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,9 +16,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -31,26 +30,38 @@ public class UserService {
 
     @Autowired
     private JwtUtils jwtUtils;
+    @Autowired
+    GeneralComponent generalComponent;
 
     private final UserRepo userRepo;
     private final LegalUserRepo legalUserRepo;
     private final PasswordEncoder encoder;
+    private final ConfirmationRepo confirmationRepo;
 
     @Autowired
-    public UserService(UserRepo userRepo, LegalUserRepo legalUserRepo, PasswordEncoder encoder) {
+    public UserService(UserRepo userRepo, LegalUserRepo legalUserRepo, PasswordEncoder encoder,
+                       ConfirmationRepo confirmationRepo) {
         this.userRepo = userRepo;
         this.legalUserRepo = legalUserRepo;
         this.encoder = encoder;
+        this.confirmationRepo = confirmationRepo;
     }
 
-    public <T> T getUser(String jwtToken) {
+    public Map<String, Object> getUser(String jwtToken) {
+        Map<String, Object> resultMap = new HashMap<>();
+
         String email = jwtUtils.getUserNameFromJwtToken(jwtToken);
 
         if (jwtUtils.validateJwtToken(jwtToken)) {
             User user = userRepo.findByEmail(email);
 
+            Confirmation confirmation = confirmationRepo.findByUser_Id(user.getId());
+
             if (user != null) {
-                return (T) user;
+                resultMap.put("user", user);
+                resultMap.put("status", confirmation != null);
+
+                return resultMap;
             } else {
                 return null;
             }
@@ -77,6 +88,10 @@ public class UserService {
                 user.setPatronymic(personalData.getPatronymic());
             }
 
+            if (personalData.getFullName() != null && !personalData.getFullName().equals(user.getFullName())) {
+                user.setFullName(personalData.getFullName());
+            }
+
             if (personalData.getPhone() != null && !personalData.getPhone().equals(user.getPhone())) {
                 user.setPhone(personalData.getPhone());
             }
@@ -86,39 +101,13 @@ public class UserService {
             }
 
             if (photo != null && !photo.getOriginalFilename().isEmpty()) {
-                setPhotoUser(photo, uuidFile, user);
+                generalComponent.setPhotoUser(photo, uuidFile, user);
             }
 
             userRepo.save(user);
             return ResponseEntity.ok("OK");
         }
         return null;
-    }
-
-    private void setPhotoUser(MultipartFile photo, String uuidFile, User user) throws IOException {
-        File uploadDir = new File(uploadPath);
-
-        if (!uploadDir.exists()) {
-            uploadDir.mkdir();
-        }
-
-        if (user.getProfilePicture() != null) {
-            int i = user.getProfilePicture().lastIndexOf('/');
-            String tempUrlPicture = user.getProfilePicture().substring(i);
-
-            File file = new File(uploadPath + "/" + tempUrlPicture);
-
-            if (file.delete()) {
-                System.out.println("Успешно удален");
-            } else {
-                System.out.println("Ошибка, файл не был удалён");
-            }
-        }
-
-        String resultFileName = uuidFile + "." + photo.getOriginalFilename();
-        photo.transferTo(new File(uploadPath + "/" + resultFileName));
-
-        user.setProfilePicture(picturePath + resultFileName);
     }
 
     public ResponseEntity<?> editPassword(PersonalData personalData, String role) {
@@ -177,5 +166,17 @@ public class UserService {
         photoBackground.transferTo(new File(uploadPath + "/" + resultFileName));
 
         user.setProfileBackground(picturePath + resultFileName);
+    }
+
+    public ResponseEntity<?> sendConfirmation(long id, Confirmation confirmation) {
+        User user = userRepo.findById(id);
+
+        if (user != null) {
+            confirmation.setUser(user);
+            confirmationRepo.save(confirmation);
+
+            return ResponseEntity.ok("OK");
+        }
+        return null;
     }
 }

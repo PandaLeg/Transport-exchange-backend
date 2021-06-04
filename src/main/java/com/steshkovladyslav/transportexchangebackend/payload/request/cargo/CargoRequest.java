@@ -1,14 +1,16 @@
 package com.steshkovladyslav.transportexchangebackend.payload.request.cargo;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.List;
 
 @Data
-public class CargoRequest {
+public class CargoRequest implements Serializable {
     private String countryFrom;
     private String countryTo;
 
@@ -22,13 +24,13 @@ public class CargoRequest {
     private String volumeFrom;
     private String volumeUpTo;
 
+    @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
     private List<String> typesTransportation;
     private String nameCargo;
     private String bodyType;
 
     private String paymentForm;
     private String paymentTime;
-
 
     /* Дата загрузки */
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE, pattern = "yyyy-MM-dd")
